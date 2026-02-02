@@ -1,7 +1,7 @@
-# organization-management Specification
+# Organization Management Specification
 
 ## Purpose
-TBD - created by archiving change phase1-foundation-implementation. Update Purpose after archive.
+Enable multi-tenant organization management including organization settings, Malaysian business configuration (SST, MyInvois), and subscription management.
 ## Requirements
 ### Requirement: Get current organization
 The system SHALL provide an endpoint to retrieve the current user's organization details.

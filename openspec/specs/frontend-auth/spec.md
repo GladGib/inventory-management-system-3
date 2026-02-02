@@ -1,7 +1,7 @@
-# frontend-auth Specification
+# Frontend Authentication Specification
 
 ## Purpose
-TBD - created by archiving change phase1-foundation-implementation. Update Purpose after archive.
+Provide client-side authentication flows including login/registration pages, token management, protected routes, and auth state persistence using Zustand.
 ## Requirements
 ### Requirement: Login page
 The system SHALL provide a login page for user authentication.

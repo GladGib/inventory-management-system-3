@@ -1,28 +1,28 @@
 ## 1. Categories Module (Backend)
 
-- [ ] 1.1 Create categories module structure (module, controller, service)
-- [ ] 1.2 Create CreateCategoryDto and UpdateCategoryDto with validation
-- [ ] 1.3 Implement category tree retrieval with recursive children
-- [ ] 1.4 Implement create category with parent validation
-- [ ] 1.5 Implement update category with circular reference check
-- [ ] 1.6 Implement delete category with item/children validation
-- [ ] 1.7 Add item count to category responses
-- [ ] 1.8 Register CategoriesModule in AppModule
+- [x] 1.1 Create categories module structure (module, controller, service)
+- [x] 1.2 Create CreateCategoryDto and UpdateCategoryDto with validation
+- [x] 1.3 Implement category tree retrieval with recursive children
+- [x] 1.4 Implement create category with parent validation
+- [x] 1.5 Implement update category with circular reference check
+- [x] 1.6 Implement delete category with item/children validation
+- [x] 1.7 Add item count to category responses
+- [x] 1.8 Register CategoriesModule in AppModule
 
 ## 2. Items Module (Backend)
 
-- [ ] 2.1 Create items module structure (module, controller, service)
-- [ ] 2.2 Create CreateItemDto with all fields and validation
-- [ ] 2.3 Create UpdateItemDto with partial fields
-- [ ] 2.4 Create ItemQueryDto for filtering and pagination
-- [ ] 2.5 Implement list items with pagination and filtering
-- [ ] 2.6 Implement full-text search on name, SKU, partNumber
-- [ ] 2.7 Implement create item with SKU uniqueness check
-- [ ] 2.8 Implement get item with stock levels and category
-- [ ] 2.9 Implement update item with SKU conflict check
-- [ ] 2.10 Implement soft delete item with stock validation
+- [x] 2.1 Create items module structure (module, controller, service)
+- [x] 2.2 Create CreateItemDto with all fields and validation
+- [x] 2.3 Create UpdateItemDto with partial fields
+- [x] 2.4 Create ItemQueryDto for filtering and pagination
+- [x] 2.5 Implement list items with pagination and filtering
+- [x] 2.6 Implement full-text search on name, SKU, partNumber
+- [x] 2.7 Implement create item with SKU uniqueness check
+- [x] 2.8 Implement get item with stock levels and category
+- [x] 2.9 Implement update item with SKU conflict check
+- [x] 2.10 Implement soft delete item with stock validation
 - [ ] 2.11 Add search index migration for PostgreSQL full-text search
-- [ ] 2.12 Register ItemsModule in AppModule
+- [x] 2.12 Register ItemsModule in AppModule
 
 ## 3. Item Groups Module (Backend)
 
@@ -36,59 +36,59 @@
 
 ## 4. Warehouses Module (Backend)
 
-- [ ] 4.1 Create warehouses module structure
-- [ ] 4.2 Create CreateWarehouseDto and UpdateWarehouseDto
-- [ ] 4.3 Implement list warehouses with stock summary
-- [ ] 4.4 Implement create warehouse with code uniqueness
-- [ ] 4.5 Implement update warehouse
-- [ ] 4.6 Implement set default warehouse
-- [ ] 4.7 Implement delete warehouse with stock validation
-- [ ] 4.8 Implement warehouse status (activate/deactivate)
+- [x] 4.1 Create warehouses module structure
+- [x] 4.2 Create CreateWarehouseDto and UpdateWarehouseDto
+- [x] 4.3 Implement list warehouses with stock summary
+- [x] 4.4 Implement create warehouse with code uniqueness
+- [x] 4.5 Implement update warehouse
+- [x] 4.6 Implement set default warehouse
+- [x] 4.7 Implement delete warehouse with stock validation
+- [x] 4.8 Implement warehouse status (activate/deactivate)
 
 ## 5. Stock Tracking Module (Backend)
 
-- [ ] 5.1 Create inventory module structure
-- [ ] 5.2 Create StockService for stock level operations
-- [ ] 5.3 Implement list stock levels with filters
-- [ ] 5.4 Implement get item stock across warehouses
-- [ ] 5.5 Implement available stock calculation
-- [ ] 5.6 Implement low stock items endpoint
-- [ ] 5.7 Implement stock valuation calculation
+- [x] 5.1 Create inventory module structure
+- [x] 5.2 Create StockService for stock level operations
+- [x] 5.3 Implement list stock levels with filters
+- [x] 5.4 Implement get item stock across warehouses
+- [x] 5.5 Implement available stock calculation
+- [x] 5.6 Implement low stock items endpoint
+- [x] 5.7 Implement stock valuation calculation
 
 ## 6. Inventory Adjustments Module (Backend)
 
-- [ ] 6.1 Create AdjustmentsService
-- [ ] 6.2 Create CreateAdjustmentDto with reason codes
-- [ ] 6.3 Implement create adjustment with stock update
-- [ ] 6.4 Implement list adjustments with filters
-- [ ] 6.5 Implement bulk adjustment endpoint
-- [ ] 6.6 Add adjustment audit fields (createdBy, timestamps)
+- [x] 6.1 Create AdjustmentsService
+- [x] 6.2 Create CreateAdjustmentDto with reason codes
+- [x] 6.3 Implement create adjustment with stock update
+- [x] 6.4 Implement list adjustments with filters
+- [x] 6.5 Implement bulk adjustment endpoint
+- [x] 6.6 Add adjustment audit fields (createdBy, timestamps)
 
 ## 7. Inventory Transfers Module (Backend)
 
-- [ ] 7.1 Create TransfersService
-- [ ] 7.2 Create CreateTransferDto with line items
-- [ ] 7.3 Implement create transfer (DRAFT status)
-- [ ] 7.4 Implement issue transfer (decrease source stock)
-- [ ] 7.5 Implement receive transfer (increase destination stock)
-- [ ] 7.6 Implement cancel transfer with stock rollback
-- [ ] 7.7 Implement list transfers with filters
-- [ ] 7.8 Add transfer number generation
+- [x] 7.1 Create TransfersService
+- [x] 7.2 Create CreateTransferDto with line items
+- [x] 7.3 Implement create transfer (DRAFT status)
+- [x] 7.4 Implement issue transfer (decrease source stock)
+- [x] 7.5 Implement receive transfer (increase destination stock)
+- [x] 7.6 Implement cancel transfer with stock rollback
+- [x] 7.7 Implement list transfers with filters
+- [x] 7.8 Add transfer number generation
 
 ## 8. Contacts Module (Backend)
 
-- [ ] 8.1 Create contacts module structure
-- [ ] 8.2 Create CreateContactDto with all fields
-- [ ] 8.3 Create UpdateContactDto
-- [ ] 8.4 Create ContactQueryDto for filtering
-- [ ] 8.5 Implement list contacts with type filter
-- [ ] 8.6 Implement search contacts
-- [ ] 8.7 Implement create contact (customer/vendor/both)
-- [ ] 8.8 Implement get contact with balance
-- [ ] 8.9 Implement update contact
-- [ ] 8.10 Implement soft delete contact
-- [ ] 8.11 Add customer alias endpoint (/customers)
-- [ ] 8.12 Add vendor alias endpoint (/vendors)
+- [x] 8.1 Create contacts module structure
+- [x] 8.2 Create CreateContactDto with all fields
+- [x] 8.3 Create UpdateContactDto
+- [x] 8.4 Create ContactQueryDto for filtering
+- [x] 8.5 Implement list contacts with type filter
+- [x] 8.6 Implement search contacts
+- [x] 8.7 Implement create contact (customer/vendor/both)
+- [x] 8.8 Implement get contact with balance
+- [x] 8.9 Implement update contact
+- [x] 8.10 Implement soft delete contact
+- [x] 8.11 Add customer alias endpoint (/customers)
+- [x] 8.12 Add vendor alias endpoint (/vendors)
 
 ## 9. File Uploads Module (Backend)
 
@@ -109,11 +109,11 @@
 
 ## 11. Items Frontend
 
-- [ ] 11.1 Update items list page with real API integration
+- [x] 11.1 Update items list page with real API integration
 - [ ] 11.2 Add advanced filter panel (category, status, type, price range)
-- [ ] 11.3 Create item detail page with tabs (Overview, Stock, History)
-- [ ] 11.4 Create item create form with all fields
-- [ ] 11.5 Create item edit form
+- [x] 11.3 Create item detail page with tabs (Overview, Stock, History)
+- [x] 11.4 Create item create form with all fields
+- [x] 11.5 Create item edit form
 - [ ] 11.6 Add image upload component with preview
 - [ ] 11.7 Add part number and cross-reference fields
 - [ ] 11.8 Add vehicle compatibility selector
@@ -134,7 +134,7 @@
 
 ## 14. Inventory Frontend
 
-- [ ] 14.1 Update stock summary page with real API
+- [x] 14.1 Update stock summary page with real API
 - [ ] 14.2 Add warehouse filter dropdown
 - [ ] 14.3 Create stock adjustment form
 - [ ] 14.4 Create adjustments history page with filters
@@ -145,7 +145,7 @@
 
 ## 15. Customers Frontend
 
-- [ ] 15.1 Update customers list page with real API
+- [x] 15.1 Update customers list page with real API
 - [ ] 15.2 Create customer detail page with tabs (Overview, Transactions, Balance)
 - [ ] 15.3 Create customer create form with address fields
 - [ ] 15.4 Create customer edit form
@@ -163,7 +163,7 @@
 
 ## 17. API Integration & Hooks
 
-- [ ] 17.1 Create useItems hook with React Query
+- [x] 17.1 Create useItems hook with React Query
 - [ ] 17.2 Create useCategories hook
 - [ ] 17.3 Create useWarehouses hook
 - [ ] 17.4 Create useStockLevels hook
@@ -179,4 +179,4 @@
 - [ ] 18.3 Add unit tests for ContactsService
 - [ ] 18.4 Add integration tests for inventory adjustments
 - [ ] 18.5 Add integration tests for transfers workflow
-- [ ] 18.6 Update Swagger documentation for all new endpoints
+- [x] 18.6 Update Swagger documentation for all new endpoints

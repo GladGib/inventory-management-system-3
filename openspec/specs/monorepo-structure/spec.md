@@ -1,7 +1,7 @@
-# monorepo-structure Specification
+# Monorepo Structure Specification
 
 ## Purpose
-TBD - created by archiving change phase1-foundation-implementation. Update Purpose after archive.
+Define the pnpm workspaces monorepo structure containing the NestJS API, Next.js web frontend, and shared packages with consistent tooling configuration.
 ## Requirements
 ### Requirement: Pnpm workspaces configuration
 The system SHALL use pnpm workspaces to manage a monorepo containing multiple applications and shared packages.

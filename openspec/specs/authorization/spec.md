@@ -1,7 +1,7 @@
-# authorization Specification
+# Authorization Specification
 
 ## Purpose
-TBD - created by archiving change phase1-foundation-implementation. Update Purpose after archive.
+Implement role-based access control (RBAC) with four user roles (ADMIN, MANAGER, STAFF, VIEWER) to restrict access to API endpoints and UI features based on user permissions.
 ## Requirements
 ### Requirement: Role-based access control
 The system SHALL enforce role-based access control with four roles: ADMIN, MANAGER, STAFF, VIEWER.

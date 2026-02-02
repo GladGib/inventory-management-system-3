@@ -1,7 +1,7 @@
-# authentication Specification
+# Authentication Specification
 
 ## Purpose
-TBD - created by archiving change phase1-foundation-implementation. Update Purpose after archive.
+Provide secure JWT-based authentication for the IMS application, including user registration, login, token refresh, and session management.
 ## Requirements
 ### Requirement: User registration
 The system SHALL allow new users to register with email, password, name, and organization details.

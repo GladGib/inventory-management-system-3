@@ -1,7 +1,7 @@
-# frontend-layout Specification
+# Frontend Layout Specification
 
 ## Purpose
-TBD - created by archiving change phase1-foundation-implementation. Update Purpose after archive.
+Provide the dashboard layout structure with responsive sidebar navigation, header with user actions, breadcrumbs, and content area using Ant Design components.
 ## Requirements
 ### Requirement: Dashboard layout structure
 The system SHALL provide a dashboard layout with sidebar, header, and content area.

@@ -1,7 +1,7 @@
-# database-schema Specification
+# Database Schema Specification
 
 ## Purpose
-TBD - created by archiving change phase1-foundation-implementation. Update Purpose after archive.
+Define the PostgreSQL database schema using Prisma ORM for the multi-tenant IMS, including organizations, users, items, inventory, contacts, sales, purchases, and compliance entities.
 ## Requirements
 ### Requirement: Organization entity
 The system SHALL store organization data with multi-tenant support.
