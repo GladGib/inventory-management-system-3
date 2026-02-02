@@ -1,0 +1,338 @@
+import { api } from './api';
+
+// ============ Types ============
+
+export type PurchaseOrderStatus =
+  | 'DRAFT'
+  | 'ISSUED'
+  | 'PARTIALLY_RECEIVED'
+  | 'RECEIVED'
+  | 'CLOSED'
+  | 'CANCELLED';
+export type BillStatus =
+  | 'DRAFT'
+  | 'RECEIVED'
+  | 'APPROVED'
+  | 'PAID'
+  | 'PARTIALLY_PAID'
+  | 'OVERDUE'
+  | 'VOID';
+
+export interface Vendor {
+  id: string;
+  displayName: string;
+  companyName?: string;
+  email?: string;
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  itemId: string;
+  item: {
+    id: string;
+    sku: string;
+    name: string;
+    unit: string;
+  };
+  description?: string;
+  quantity: number;
+  receivedQty: number;
+  unitPrice: number;
+  discountPercent?: number;
+  taxRateId?: string;
+  taxRate?: {
+    id: string;
+    name: string;
+    rate: number;
+  };
+  amount: number;
+  taxAmount: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  orderNumber: string;
+  vendorId: string;
+  vendor: Vendor;
+  orderDate: string;
+  expectedDate?: string;
+  status: PurchaseOrderStatus;
+  receiveStatus: string;
+  billStatus: string;
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  discountAmount?: number;
+  shippingCharges?: number;
+  taxAmount: number;
+  total: number;
+  notes?: string;
+  referenceNumber?: string;
+  warehouseId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Bill {
+  id: string;
+  billNumber: string;
+  purchaseOrderId?: string;
+  purchaseOrder?: {
+    id: string;
+    orderNumber: string;
+  };
+  vendorId: string;
+  vendor: Vendor;
+  billDate: string;
+  dueDate: string;
+  status: BillStatus;
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  discount: number;
+  taxAmount: number;
+  total: number;
+  amountPaid: number;
+  balance: number;
+  vendorInvoiceNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorPayment {
+  id: string;
+  paymentNumber: string;
+  vendorId: string;
+  vendor: Vendor;
+  paymentDate: string;
+  amount: number;
+  paymentMethod: string;
+  referenceNumber?: string;
+  notes?: string;
+  allocations: {
+    billId: string;
+    bill: {
+      id: string;
+      billNumber: string;
+    };
+    amount: number;
+  }[];
+  createdAt: string;
+}
+
+export interface PurchaseReceive {
+  id: string;
+  receiveNumber: string;
+  purchaseOrderId: string;
+  purchaseOrder: {
+    id: string;
+    orderNumber: string;
+  };
+  vendorId: string;
+  vendor: Vendor;
+  receiveDate: string;
+  warehouseId: string;
+  warehouse: {
+    id: string;
+    name: string;
+  };
+  status: string;
+  items: {
+    itemId: string;
+    item: {
+      id: string;
+      sku: string;
+      name: string;
+    };
+    quantityReceived: number;
+  }[];
+  createdAt: string;
+}
+
+// Query Parameters
+export interface PurchaseOrderQueryParams {
+  status?: PurchaseOrderStatus;
+  vendorId?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface BillQueryParams {
+  status?: BillStatus;
+  vendorId?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaymentQueryParams {
+  vendorId?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ReceiveQueryParams {
+  vendorId?: string;
+  purchaseOrderId?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+// Response Types
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// DTOs
+export interface PurchaseOrderItemDto {
+  itemId: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  discountPercent?: number;
+  taxRateId?: string;
+}
+
+export interface CreatePurchaseOrderDto {
+  vendorId: string;
+  orderDate?: Date;
+  expectedDate?: Date;
+  items: PurchaseOrderItemDto[];
+  discountAmount?: number;
+  shippingCharges?: number;
+  warehouseId?: string;
+  referenceNumber?: string;
+  notes?: string;
+}
+
+export interface UpdatePurchaseOrderDto extends Partial<CreatePurchaseOrderDto> {}
+
+export interface CreateBillDto {
+  vendorId: string;
+  purchaseOrderId?: string;
+  billDate?: Date;
+  dueDate?: Date;
+  items: PurchaseOrderItemDto[];
+  discountAmount?: number;
+  vendorInvoiceNumber?: string;
+  notes?: string;
+}
+
+export interface CreateVendorPaymentDto {
+  vendorId: string;
+  paymentDate?: Date;
+  amount: number;
+  paymentMethod: string;
+  referenceNumber?: string;
+  notes?: string;
+  allocations: {
+    billId: string;
+    amount: number;
+  }[];
+}
+
+export interface CreateReceiveDto {
+  purchaseOrderId: string;
+  receiveDate?: Date;
+  warehouseId?: string;
+  items: {
+    itemId: string;
+    quantityReceived: number;
+  }[];
+  notes?: string;
+}
+
+// ============ Service ============
+
+export const purchasesService = {
+  // Purchase Orders
+  async getOrders(params?: PurchaseOrderQueryParams): Promise<PaginatedResponse<PurchaseOrder>> {
+    const response = await api.get<PaginatedResponse<PurchaseOrder>>('/purchases/orders', {
+      params,
+    });
+    return response.data;
+  },
+
+  async getOrder(id: string): Promise<PurchaseOrder> {
+    const response = await api.get<PurchaseOrder>(`/purchases/orders/${id}`);
+    return response.data;
+  },
+
+  async createOrder(data: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
+    const response = await api.post<PurchaseOrder>('/purchases/orders', data);
+    return response.data;
+  },
+
+  async issueOrder(id: string): Promise<PurchaseOrder> {
+    const response = await api.put<PurchaseOrder>(`/purchases/orders/${id}/issue`);
+    return response.data;
+  },
+
+  async cancelOrder(id: string): Promise<PurchaseOrder> {
+    const response = await api.put<PurchaseOrder>(`/purchases/orders/${id}/cancel`);
+    return response.data;
+  },
+
+  async createBillFromOrder(orderId: string): Promise<Bill> {
+    const response = await api.post<Bill>(`/purchases/orders/${orderId}/bill`);
+    return response.data;
+  },
+
+  // Receives
+  async getReceives(params?: ReceiveQueryParams): Promise<PaginatedResponse<PurchaseReceive>> {
+    const response = await api.get<PaginatedResponse<PurchaseReceive>>('/purchases/receives', {
+      params,
+    });
+    return response.data;
+  },
+
+  async createReceive(data: CreateReceiveDto): Promise<PurchaseReceive> {
+    const response = await api.post<PurchaseReceive>('/purchases/receives', data);
+    return response.data;
+  },
+
+  // Bills
+  async getBills(params?: BillQueryParams): Promise<PaginatedResponse<Bill>> {
+    const response = await api.get<PaginatedResponse<Bill>>('/purchases/bills', { params });
+    return response.data;
+  },
+
+  async getBill(id: string): Promise<Bill> {
+    const response = await api.get<Bill>(`/purchases/bills/${id}`);
+    return response.data;
+  },
+
+  async createBill(data: CreateBillDto): Promise<Bill> {
+    const response = await api.post<Bill>('/purchases/bills', data);
+    return response.data;
+  },
+
+  async approveBill(id: string): Promise<Bill> {
+    const response = await api.put<Bill>(`/purchases/bills/${id}/approve`);
+    return response.data;
+  },
+
+  // Payments
+  async getPayments(params?: PaymentQueryParams): Promise<PaginatedResponse<VendorPayment>> {
+    const response = await api.get<PaginatedResponse<VendorPayment>>('/purchases/payments', {
+      params,
+    });
+    return response.data;
+  },
+
+  async createPayment(data: CreateVendorPaymentDto): Promise<VendorPayment> {
+    const response = await api.post<VendorPayment>('/purchases/payments', data);
+    return response.data;
+  },
+};

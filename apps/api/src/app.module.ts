@@ -1,0 +1,91 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+
+// Core Modules
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { OrganizationsModule } from './modules/organizations/organizations.module';
+
+// Phase 2: Core Modules
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ItemsModule } from './modules/items/items.module';
+import { WarehousesModule } from './modules/warehouses/warehouses.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { ContactsModule } from './modules/contacts/contacts.module';
+
+// Phase 3: Transaction Modules
+import { SalesModule } from './modules/sales/sales.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
+
+// Phase 4: Compliance Modules
+import { TaxModule } from './modules/tax/tax.module';
+import { EInvoiceModule } from './modules/einvoice/einvoice.module';
+
+// Phase 5: Reports & Dashboard
+import { ReportsModule } from './modules/reports/reports.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+
+// App Controller for health check
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+@Module({
+  imports: [
+    // Configuration
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+    }),
+
+    // Rate Limiting
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get('THROTTLE_TTL', 60000), // 1 minute
+          limit: config.get('THROTTLE_LIMIT', 100), // 100 requests per minute
+        },
+      ],
+    }),
+
+    // Database
+    PrismaModule,
+
+    // Core Modules
+    AuthModule,
+    UsersModule,
+    OrganizationsModule,
+
+    // Phase 2: Core Modules
+    CategoriesModule,
+    ItemsModule,
+    WarehousesModule,
+    InventoryModule,
+    ContactsModule,
+
+    // Phase 3: Transaction Modules
+    SalesModule,
+    PurchasesModule,
+
+    // Phase 4: Compliance Modules
+    TaxModule,
+    EInvoiceModule,
+
+    // Phase 5: Reports & Dashboard
+    ReportsModule,
+    DashboardModule,
+  ],
+  controllers: [AppController],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
+})
+export class AppModule {}
