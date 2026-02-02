@@ -29,6 +29,7 @@ import {
   DeleteOutlined,
   CopyOutlined,
   ExclamationCircleOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import { useItems, useDeleteItem } from '@/hooks/use-items';
 import { Item, ItemStatus, ItemType, ItemQueryParams } from '@/lib/items';
@@ -175,10 +176,13 @@ export default function ItemsPage() {
           style={{
             color: record.isLowStock ? '#ff4d4f' : undefined,
             fontWeight: record.isLowStock ? 600 : undefined,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
           }}
         >
           {stock}
-          {record.isLowStock && ' ⚠'}
+          {record.isLowStock && <WarningOutlined style={{ fontSize: 12 }} />}
         </span>
       ),
     },

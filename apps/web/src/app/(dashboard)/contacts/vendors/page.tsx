@@ -29,13 +29,13 @@ import {
   MailOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
-import { useCustomers, useDeleteContact } from '@/hooks/use-contacts';
+import { useVendors, useDeleteContact } from '@/hooks/use-contacts';
 import { Contact, ContactQueryParams } from '@/lib/contacts';
 
 const { Title } = Typography;
 const { confirm } = Modal;
 
-export default function CustomersPage() {
+export default function VendorsPage() {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [filters, setFilters] = useState<Omit<ContactQueryParams, 'type'>>({
@@ -53,12 +53,12 @@ export default function CustomersPage() {
     [filters, searchText]
   );
 
-  const { data, isLoading, isFetching } = useCustomers(queryParams);
+  const { data, isLoading, isFetching } = useVendors(queryParams);
   const deleteContact = useDeleteContact();
 
   const handleDelete = (record: Contact) => {
     confirm({
-      title: 'Delete Customer',
+      title: 'Delete Vendor',
       icon: <ExclamationCircleOutlined />,
       content: `Are you sure you want to delete "${record.displayName}"? This action cannot be undone.`,
       okText: 'Delete',
@@ -73,7 +73,7 @@ export default function CustomersPage() {
       key: 'edit',
       icon: <EditOutlined />,
       label: 'Edit',
-      onClick: () => router.push(`/contacts/customers/${record.id}/edit`),
+      onClick: () => router.push(`/contacts/vendors/${record.id}/edit`),
     },
     {
       key: 'email',
@@ -98,7 +98,7 @@ export default function CustomersPage() {
       key: 'displayName',
       sorter: true,
       render: (name: string, record: Contact) => (
-        <Link href={`/contacts/customers/${record.id}`} style={{ fontWeight: 500 }}>
+        <Link href={`/contacts/vendors/${record.id}`} style={{ fontWeight: 500 }}>
           {name}
         </Link>
       ),
@@ -176,13 +176,13 @@ export default function CustomersPage() {
         }}
       >
         <Title level={4} style={{ margin: 0 }}>
-          Customers
+          Vendors
         </Title>
         <Space>
           <Button icon={<DownloadOutlined />}>Export</Button>
-          <Link href="/contacts/customers/new">
+          <Link href="/contacts/vendors/new">
             <Button type="primary" icon={<PlusOutlined />}>
-              New Customer
+              New Vendor
             </Button>
           </Link>
         </Space>
@@ -192,7 +192,7 @@ export default function CustomersPage() {
         <div style={{ marginBottom: 16 }}>
           <Space wrap>
             <Input
-              placeholder="Search customers..."
+              placeholder="Search vendors..."
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => {
@@ -242,7 +242,7 @@ export default function CustomersPage() {
             total: data?.meta?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `Total ${total} customers`,
+            showTotal: (total) => `Total ${total} vendors`,
             pageSizeOptions: ['10', '25', '50', '100'],
           }}
         />

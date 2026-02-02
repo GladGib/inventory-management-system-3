@@ -58,13 +58,15 @@ export class UsersService {
   }
 
   async findAllByOrganization(organizationId: string, options?: {
-    page?: number;
-    limit?: number;
+    page?: number | string;
+    limit?: number | string;
     search?: string;
     status?: string;
     role?: string;
   }) {
-    const { page = 1, limit = 25, search, status, role } = options || {};
+    const { search, status, role } = options || {};
+    const page = Number(options?.page) || 1;
+    const limit = Number(options?.limit) || 25;
     const skip = (page - 1) * limit;
 
     const where = {

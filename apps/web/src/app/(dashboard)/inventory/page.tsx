@@ -1,89 +1,62 @@
 'use client';
 
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { Card, Table, Typography, Tag, Input, Space, Button, Select } from 'antd';
 import { SearchOutlined, FilterOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
+import { useStockLevels, useWarehouses } from '@/hooks/use-inventory';
+import { StockLevel, StockQueryParams } from '@/lib/inventory';
 
 const { Title } = Typography;
 
-interface StockLevel {
-  id: string;
-  itemSku: string;
-  itemName: string;
-  warehouse: string;
-  stockOnHand: number;
-  committedStock: number;
-  availableStock: number;
-  reorderLevel: number;
-  status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
-}
-
-// Mock data
-const mockStockLevels: StockLevel[] = [
-  {
-    id: '1',
-    itemSku: 'BRK-001',
-    itemName: 'Brake Pad Set - Toyota Vios',
-    warehouse: 'Main Warehouse',
-    stockOnHand: 45,
-    committedStock: 5,
-    availableStock: 40,
-    reorderLevel: 10,
-    status: 'IN_STOCK',
-  },
-  {
-    id: '2',
-    itemSku: 'OIL-001',
-    itemName: 'Engine Oil 5W-30 4L',
-    warehouse: 'Main Warehouse',
-    stockOnHand: 120,
-    committedStock: 20,
-    availableStock: 100,
-    reorderLevel: 25,
-    status: 'IN_STOCK',
-  },
-  {
-    id: '3',
-    itemSku: 'FLT-001',
-    itemName: 'Air Filter - Honda City',
-    warehouse: 'Main Warehouse',
-    stockOnHand: 8,
-    committedStock: 2,
-    availableStock: 6,
-    reorderLevel: 15,
-    status: 'LOW_STOCK',
-  },
-  {
-    id: '4',
-    itemSku: 'BLT-001',
-    itemName: 'Timing Belt - Proton Saga',
-    warehouse: 'Main Warehouse',
-    stockOnHand: 0,
-    committedStock: 0,
-    availableStock: 0,
-    reorderLevel: 5,
-    status: 'OUT_OF_STOCK',
-  },
-];
-
 export default function InventoryPage() {
+  const [searchText, setSearchText] = useState('');
+  const [filters, setFilters] = useState<StockQueryParams>({});
+
+  const { data: stockLevels, isLoading, isFetching } = useStockLevels(filters);
+  const { data: warehouses } = useWarehouses();
+
+  // Filter stock levels by search text (client-side for now)
+  const filteredData = useMemo(() => {
+    if (!stockLevels) return [];
+    if (!searchText) return stockLevels;
+
+    const search = searchText.toLowerCase();
+    return stockLevels.filter(
+      (stock) =>
+        stock.item.sku.toLowerCase().includes(search) ||
+        stock.item.name.toLowerCase().includes(search)
+    );
+  }, [stockLevels, searchText]);
+
+  const getStockStatus = (stock: StockLevel): 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' => {
+    if (Number(stock.stockOnHand) === 0) return 'OUT_OF_STOCK';
+    if (stock.isLowStock) return 'LOW_STOCK';
+    return 'IN_STOCK';
+  };
+
   const columns: TableColumnsType<StockLevel> = [
     {
       title: 'SKU',
-      dataIndex: 'itemSku',
-      key: 'itemSku',
-      width: 120,
-      render: (sku: string) => <span style={{ fontWeight: 500 }}>{sku}</span>,
+      dataIndex: ['item', 'sku'],
+      key: 'sku',
+      width: 130,
+      render: (sku: string, record: StockLevel) => (
+        <Link href={`/items/${record.itemId}`} style={{ fontWeight: 500 }}>
+          {sku}
+        </Link>
+      ),
     },
     {
       title: 'Item Name',
-      dataIndex: 'itemName',
-      key: 'itemName',
+      dataIndex: ['item', 'name'],
+      key: 'name',
       ellipsis: true,
     },
     {
       title: 'Warehouse',
-      dataIndex: 'warehouse',
+      dataIndex: ['warehouse', 'name'],
       key: 'warehouse',
       width: 150,
     },
@@ -93,6 +66,7 @@ export default function InventoryPage() {
       key: 'stockOnHand',
       width: 100,
       align: 'right',
+      render: (stock: number) => Number(stock).toLocaleString(),
     },
     {
       title: 'Committed',
@@ -100,6 +74,7 @@ export default function InventoryPage() {
       key: 'committedStock',
       width: 100,
       align: 'right',
+      render: (stock: number) => Number(stock).toLocaleString(),
     },
     {
       title: 'Available',
@@ -107,20 +82,30 @@ export default function InventoryPage() {
       key: 'availableStock',
       width: 100,
       align: 'right',
+      render: (stock: number) => Number(stock).toLocaleString(),
     },
     {
       title: 'Reorder Level',
-      dataIndex: 'reorderLevel',
+      dataIndex: ['item', 'reorderLevel'],
       key: 'reorderLevel',
       width: 120,
       align: 'right',
+      render: (level: number) => Number(level).toLocaleString(),
+    },
+    {
+      title: 'Stock Value',
+      dataIndex: 'stockValue',
+      key: 'stockValue',
+      width: 130,
+      align: 'right',
+      render: (value: number) => `RM ${Number(value).toFixed(2)}`,
     },
     {
       title: 'Status',
-      dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: string) => {
+      render: (_: unknown, record: StockLevel) => {
+        const status = getStockStatus(record);
         const colorMap: Record<string, string> = {
           IN_STOCK: 'green',
           LOW_STOCK: 'orange',
@@ -154,42 +139,61 @@ export default function InventoryPage() {
 
       <Card>
         <div style={{ marginBottom: 16 }}>
-          <Space>
+          <Space wrap>
             <Input
-              placeholder="Search items..."
+              placeholder="Search by SKU or item name..."
               prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 300 }}
+              allowClear
             />
             <Select
               placeholder="Warehouse"
               style={{ width: 200 }}
+              allowClear
+              value={filters.warehouseId}
+              onChange={(value) => setFilters((prev) => ({ ...prev, warehouseId: value }))}
               options={[
-                { value: 'all', label: 'All Warehouses' },
-                { value: 'main', label: 'Main Warehouse' },
+                { value: undefined, label: 'All Warehouses' },
+                ...(warehouses?.map((w) => ({ value: w.id, label: w.name })) || []),
               ]}
             />
             <Select
-              placeholder="Status"
+              placeholder="Stock Status"
               style={{ width: 150 }}
+              allowClear
+              value={filters.lowStockOnly ? 'LOW_STOCK' : undefined}
+              onChange={(value) => setFilters((prev) => ({ ...prev, lowStockOnly: value === 'LOW_STOCK' }))}
               options={[
-                { value: 'all', label: 'All Status' },
-                { value: 'IN_STOCK', label: 'In Stock' },
-                { value: 'LOW_STOCK', label: 'Low Stock' },
-                { value: 'OUT_OF_STOCK', label: 'Out of Stock' },
+                { value: undefined, label: 'All Status' },
+                { value: 'LOW_STOCK', label: 'Low Stock Only' },
               ]}
             />
+            <Button
+              icon={<FilterOutlined />}
+              onClick={() => {
+                setSearchText('');
+                setFilters({});
+              }}
+            >
+              Reset
+            </Button>
           </Space>
         </div>
 
         <Table
           columns={columns}
-          dataSource={mockStockLevels}
+          dataSource={filteredData}
           rowKey="id"
+          loading={isLoading || isFetching}
           pagination={{
-            total: mockStockLevels.length,
+            total: filteredData.length,
             showSizeChanger: true,
             showTotal: (total) => `Total ${total} items`,
+            pageSizeOptions: ['10', '25', '50', '100'],
           }}
+          scroll={{ x: 1200 }}
         />
       </Card>
     </div>
