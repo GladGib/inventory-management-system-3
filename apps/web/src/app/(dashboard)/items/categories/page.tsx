@@ -70,7 +70,13 @@ export default function CategoriesPage() {
   });
 
   const updateCategory = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { name: string; description?: string } }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { name: string; description?: string };
+    }) => {
       const response = await api.put(`/categories/${id}`, data);
       return response.data;
     },

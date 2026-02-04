@@ -15,9 +15,11 @@ export const contactKeys = {
   lists: () => [...contactKeys.all, 'list'] as const,
   list: (params: ContactQueryParams) => [...contactKeys.lists(), params] as const,
   customers: () => [...contactKeys.all, 'customers'] as const,
-  customerList: (params: Omit<ContactQueryParams, 'type'>) => [...contactKeys.customers(), params] as const,
+  customerList: (params: Omit<ContactQueryParams, 'type'>) =>
+    [...contactKeys.customers(), params] as const,
   vendors: () => [...contactKeys.all, 'vendors'] as const,
-  vendorList: (params: Omit<ContactQueryParams, 'type'>) => [...contactKeys.vendors(), params] as const,
+  vendorList: (params: Omit<ContactQueryParams, 'type'>) =>
+    [...contactKeys.vendors(), params] as const,
   details: () => [...contactKeys.all, 'detail'] as const,
   detail: (id: string) => [...contactKeys.details(), id] as const,
 };

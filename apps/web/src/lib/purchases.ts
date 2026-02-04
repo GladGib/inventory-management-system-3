@@ -274,6 +274,11 @@ export const purchasesService = {
     return response.data;
   },
 
+  async updateOrder(id: string, data: UpdatePurchaseOrderDto): Promise<PurchaseOrder> {
+    const response = await api.put<PurchaseOrder>(`/purchases/orders/${id}`, data);
+    return response.data;
+  },
+
   async issueOrder(id: string): Promise<PurchaseOrder> {
     const response = await api.put<PurchaseOrder>(`/purchases/orders/${id}/issue`);
     return response.data;
@@ -323,6 +328,16 @@ export const purchasesService = {
     return response.data;
   },
 
+  async updateBill(id: string, data: CreateBillDto): Promise<Bill> {
+    const response = await api.put<Bill>(`/purchases/bills/${id}`, data);
+    return response.data;
+  },
+
+  async voidBill(id: string): Promise<Bill> {
+    const response = await api.put<Bill>(`/purchases/bills/${id}/void`);
+    return response.data;
+  },
+
   // Payments
   async getPayments(params?: PaymentQueryParams): Promise<PaginatedResponse<VendorPayment>> {
     const response = await api.get<PaginatedResponse<VendorPayment>>('/purchases/payments', {
@@ -333,6 +348,16 @@ export const purchasesService = {
 
   async createPayment(data: CreateVendorPaymentDto): Promise<VendorPayment> {
     const response = await api.post<VendorPayment>('/purchases/payments', data);
+    return response.data;
+  },
+
+  async getPayment(id: string): Promise<VendorPayment> {
+    const response = await api.get<VendorPayment>(`/purchases/payments/${id}`);
+    return response.data;
+  },
+
+  async getVendorOpenBills(vendorId: string): Promise<Bill[]> {
+    const response = await api.get<Bill[]>(`/purchases/bills/vendor/${vendorId}/open`);
     return response.data;
   },
 };

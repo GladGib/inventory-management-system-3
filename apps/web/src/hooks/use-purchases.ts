@@ -12,6 +12,7 @@ import {
   ReceiveQueryParams,
   PaginatedResponse,
   CreatePurchaseOrderDto,
+  UpdatePurchaseOrderDto,
   CreateBillDto,
   CreateVendorPaymentDto,
   CreateReceiveDto,
@@ -63,6 +64,23 @@ export function useCreatePurchaseOrder() {
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to create purchase order');
+    },
+  });
+}
+
+export function useUpdatePurchaseOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdatePurchaseOrderDto }) =>
+      purchasesService.updateOrder(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.orders() });
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.orderDetail(id) });
+      message.success('Purchase order updated successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to update purchase order');
     },
   });
 }
@@ -188,12 +206,61 @@ export function useApproveBill() {
   });
 }
 
+export function useUpdateBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateBillDto }) =>
+      purchasesService.updateBill(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.bills() });
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.billDetail(id) });
+      message.success('Bill updated successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to update bill');
+    },
+  });
+}
+
+export function useVoidBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => purchasesService.voidBill(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.bills() });
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.billDetail(id) });
+      message.success('Bill voided');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to void bill');
+    },
+  });
+}
+
 // ============ Payments ============
 
 export function useVendorPayments(params?: PaymentQueryParams) {
   return useQuery<PaginatedResponse<VendorPayment>>({
     queryKey: purchaseKeys.paymentList(params || {}),
     queryFn: () => purchasesService.getPayments(params),
+  });
+}
+
+export function useVendorPayment(id: string) {
+  return useQuery<VendorPayment>({
+    queryKey: [...purchaseKeys.payments(), 'detail', id],
+    queryFn: () => purchasesService.getPayment(id),
+    enabled: !!id,
+  });
+}
+
+export function useVendorOpenBills(vendorId: string) {
+  return useQuery<Bill[]>({
+    queryKey: [...purchaseKeys.bills(), 'vendor', vendorId, 'open'],
+    queryFn: () => purchasesService.getVendorOpenBills(vendorId),
+    enabled: !!vendorId,
   });
 }
 

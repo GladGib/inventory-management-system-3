@@ -87,7 +87,10 @@ export function Header({ collapsed }: HeaderProps) {
         </Badge>
 
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
-          <Space style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 8 }} className="header-user-dropdown">
+          <Space
+            style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 8 }}
+            className="header-user-dropdown"
+          >
             <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
             <div style={{ lineHeight: 1.3 }}>
               <Text strong style={{ display: 'block', fontSize: 14 }}>

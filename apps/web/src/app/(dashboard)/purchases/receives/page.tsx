@@ -76,11 +76,7 @@ export default function PurchaseReceivesPage() {
       key: 'purchaseOrder',
       width: 130,
       render: (num: string, record: PurchaseReceive) =>
-        num ? (
-          <Link href={`/purchases/orders/${record.purchaseOrderId}`}>{num}</Link>
-        ) : (
-          '-'
-        ),
+        num ? <Link href={`/purchases/orders/${record.purchaseOrderId}`}>{num}</Link> : '-',
     },
     {
       title: 'Vendor',

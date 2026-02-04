@@ -164,7 +164,9 @@ export default function InventoryPage() {
               style={{ width: 150 }}
               allowClear
               value={filters.lowStockOnly ? 'LOW_STOCK' : undefined}
-              onChange={(value) => setFilters((prev) => ({ ...prev, lowStockOnly: value === 'LOW_STOCK' }))}
+              onChange={(value) =>
+                setFilters((prev) => ({ ...prev, lowStockOnly: value === 'LOW_STOCK' }))
+              }
               options={[
                 { value: undefined, label: 'All Status' },
                 { value: 'LOW_STOCK', label: 'Low Stock Only' },

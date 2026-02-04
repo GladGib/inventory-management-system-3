@@ -130,7 +130,12 @@ export default function CustomersPage() {
       align: 'right',
       sorter: true,
       render: (balance: number) => (
-        <span style={{ color: balance > 0 ? '#ff4d4f' : undefined, fontWeight: balance > 0 ? 600 : undefined }}>
+        <span
+          style={{
+            color: balance > 0 ? '#ff4d4f' : undefined,
+            fontWeight: balance > 0 ? 600 : undefined,
+          }}
+        >
           RM {Number(balance || 0).toFixed(2)}
         </span>
       ),
