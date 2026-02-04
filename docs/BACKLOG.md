@@ -1,6 +1,6 @@
 # IMS Development Backlog
 
-Last updated: 2026-02-04
+Last updated: 2026-02-04 (P1 dashboard/contacts/reports complete)
 
 This document tracks remaining, incomplete, and not-yet-implemented features based on the Implementation Plan and OpenSpec specifications.
 
@@ -69,11 +69,11 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 |---------|--------|------|-------|
 | Customers CRUD | Done | customers | List, search, filter |
 | Vendors CRUD | Done | vendors | List, search, filter |
-| Contact detail page | **Backend Only** | customers/vendors | No frontend detail view |
+| Contact detail page | Done | customers/vendors | Full profile with transactions |
 | Address book | **Spec Only** | customers | Multiple addresses per contact |
 | Payment terms | **Spec Only** | customers/vendors | Link to PaymentTerm records |
-| Customer balance tracking | **Backend Only** | customers | API exists, no UI |
-| Vendor balance tracking | **Backend Only** | vendors | API exists, no UI |
+| Customer balance tracking | Done | customers | Balance summary card |
+| Vendor balance tracking | Done | vendors | Balance summary card |
 | Price lists | Not Started | - | Customer-specific pricing |
 
 ---
@@ -159,33 +159,33 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 
 ---
 
-## Phase 5: Reports & Analytics - PARTIAL
+## Phase 5: Reports & Analytics - IN PROGRESS
 
 ### Dashboard
 
 | Feature | Status | Spec | Notes |
 |---------|--------|------|-------|
-| KPI widgets | **Partial** | dashboard-analytics | Basic stats only |
-| Sales charts | Not Started | dashboard-analytics | Line, pie, bar charts |
-| Inventory widgets | **Partial** | dashboard-analytics | Low stock count |
-| Pending actions | **Partial** | dashboard-analytics | Static mock data |
-| Recent activity | **Partial** | dashboard-analytics | Static mock data |
-| Cash flow overview | Not Started | dashboard-analytics | Receivables/payables aging |
+| KPI widgets | Done | dashboard-analytics | Month/YTD sales, receivables, payables |
+| Sales charts | Done | dashboard-analytics | Sales trend, top items, top customers |
+| Inventory widgets | Done | dashboard-analytics | Low stock count, pending orders |
+| Pending actions | Done | dashboard-analytics | Real API alerts |
+| Recent activity | Done | dashboard-analytics | Recent invoices and orders |
+| Cash flow overview | Done | dashboard-analytics | Net position, receivables/payables |
 | Customizable layout | Not Started | dashboard-analytics | Drag-and-drop widgets |
 
 ### Reports
 
 | Feature | Status | Spec | Notes |
 |---------|--------|------|-------|
-| Reports navigation | Done | - | List of report links |
-| Sales by Customer | **Backend Only** | sales-reports | No frontend view |
-| Sales by Item | **Backend Only** | sales-reports | No frontend view |
-| Invoice Aging | Not Started | sales-reports | AR aging buckets |
-| Inventory Summary | **Backend Only** | inventory-reports | No frontend view |
-| Stock Valuation | Not Started | inventory-reports | FIFO/LIFO/Average |
+| Reports navigation | Done | - | Card-based layout with categories |
+| Sales by Customer | Done | sales-reports | Full viewer with date filters |
+| Sales by Item | Done | sales-reports | Full viewer with date filters |
+| Receivables Aging | Done | sales-reports | AR aging buckets |
+| Inventory Summary | Done | inventory-reports | Full viewer with stock levels |
+| Inventory Valuation | Done | inventory-reports | Value calculation by item |
 | Stock Aging | Not Started | inventory-reports | Slow-moving items |
 | Purchase by Vendor | **Backend Only** | - | No frontend view |
-| Bill Aging | Not Started | - | AP aging buckets |
+| Payables Aging | Done | - | AP aging buckets |
 | Export to Excel | Not Started | - | xlsx generation |
 | Export to PDF | Not Started | - | PDF generation |
 
@@ -253,11 +253,11 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 ### Medium Priority (P1) - Business Features
 
 10. **PDF generation** - Sales order, Invoice, PO, Bill PDFs
-11. **Dashboard charts** - Sales trends, top products/customers
+11. ~~**Dashboard charts**~~ - ✓ Done (2026-02-04)
 12. **Item images upload** - File upload UI
-13. **Report viewers** - Actual report display pages
+13. ~~**Report viewers**~~ - ✓ Done (2026-02-04)
 14. **Email notifications** - Transaction confirmations
-15. **Contact detail pages** - Customer/vendor full profile
+15. ~~**Contact detail pages**~~ - ✓ Done (2026-02-04)
 16. **Sales returns & credit notes** - Return workflow
 
 ### Lower Priority (P2) - Compliance & Advanced
@@ -299,12 +299,12 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 | Category | Specs | Done | Partial | Not Started |
 |----------|-------|------|---------|-------------|
 | Phase 1 (Foundation) | 11 | 11 | 0 | 0 |
-| Phase 2 (Core) | 18 | 12 | 2 | 4 |
+| Phase 2 (Core) | 18 | 15 | 0 | 3 |
 | Phase 3 (Transactions) | 24 | 19 | 0 | 5 |
 | Phase 4 (Compliance) | 16 | 0 | 3 | 13 |
-| Phase 5 (Reports) | 14 | 1 | 4 | 9 |
+| Phase 5 (Reports) | 14 | 12 | 0 | 2 |
 | Phase 6 (Advanced) | 9 | 0 | 0 | 9 |
 | Phase 7 (Mobile) | 8 | 0 | 0 | 8 |
-| **Total** | **100** | **43** | **9** | **48** |
+| **Total** | **100** | **57** | **3** | **40** |
 
-**Overall Progress: ~43% Complete**
+**Overall Progress: ~57% Complete**

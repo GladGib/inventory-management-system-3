@@ -1,67 +1,38 @@
 'use client';
 
-import { Card, Row, Col, Statistic, Typography, Table, List, Tag, Space, Button } from 'antd';
+import { Card, Row, Col, Statistic, Typography } from 'antd';
 import {
-  ShoppingOutlined,
-  TeamOutlined,
   DollarOutlined,
   WarningOutlined,
   FileTextOutlined,
   ShoppingCartOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
+  RiseOutlined,
+  FallOutlined,
 } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { useDashboardOverview } from '@/hooks/use-dashboard';
+import {
+  SalesTrendChart,
+  TopItemsChart,
+  TopCustomersChart,
+  PendingActionsCard,
+  RecentActivityCard,
+} from '@/components/dashboard';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
-interface DashboardStats {
-  organization: {
-    id: string;
-    name: string;
-  };
-  inventory: {
-    totalItems: number;
-    lowStockItems: number;
-  };
-  contacts: {
-    totalCustomers: number;
-    totalVendors: number;
-  };
-  sales: {
-    pendingSalesOrders: number;
-    unpaidInvoices: number;
-  };
-  purchases: {
-    pendingPurchaseOrders: number;
-    unpaidBills: number;
-  };
-}
+// Format currency for display
+const formatCurrency = (value: number) => {
+  if (value >= 1000000) {
+    return `RM ${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `RM ${(value / 1000).toFixed(1)}K`;
+  }
+  return `RM ${value.toFixed(2)}`;
+};
 
 export default function DashboardPage() {
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: async () => {
-      const response = await api.get<DashboardStats>('/organizations/current/dashboard');
-      return response.data;
-    },
-  });
-
-  const recentActivities = [
-    { id: 1, action: 'Invoice #INV-001 created', time: '5 minutes ago', type: 'invoice' },
-    { id: 2, action: 'Sales Order #SO-012 confirmed', time: '1 hour ago', type: 'sales' },
-    { id: 3, action: 'Stock adjustment completed', time: '2 hours ago', type: 'inventory' },
-    { id: 4, action: 'New customer added: ABC Sdn Bhd', time: '3 hours ago', type: 'customer' },
-    { id: 5, action: 'Purchase Order #PO-008 issued', time: '5 hours ago', type: 'purchase' },
-  ];
-
-  const pendingTasks = [
-    { id: 1, task: '5 invoices awaiting payment', status: 'warning' },
-    { id: 2, task: '3 sales orders ready to ship', status: 'info' },
-    { id: 3, task: '8 items below reorder level', status: 'error' },
-    { id: 4, task: '2 purchase orders pending approval', status: 'warning' },
-  ];
+  const { data: overview, isLoading } = useDashboardOverview();
+  const kpis = overview?.kpis;
 
   return (
     <div>
@@ -69,127 +40,125 @@ export default function DashboardPage() {
         Dashboard
       </Title>
 
-      {/* Stats Cards */}
+      {/* Sales & Revenue Stats */}
       <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card loading={isLoading}>
             <Statistic
-              title="Total Items"
-              value={stats?.inventory.totalItems || 0}
-              prefix={<ShoppingOutlined style={{ color: '#1890ff' }} />}
+              title="Month Sales"
+              value={kpis?.monthSales?.total || 0}
+              prefix={<RiseOutlined style={{ color: '#52c41a' }} />}
+              formatter={(value) => formatCurrency(Number(value))}
+              suffix={<span style={{ fontSize: 12, color: '#999' }}>({kpis?.monthSales?.count || 0} invoices)</span>}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card loading={isLoading}>
+            <Statistic
+              title="Year-to-Date Sales"
+              value={kpis?.ytdSales || 0}
+              prefix={<DollarOutlined style={{ color: '#1890ff' }} />}
+              formatter={(value) => formatCurrency(Number(value))}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={isLoading}>
             <Statistic
               title="Low Stock Items"
-              value={stats?.inventory.lowStockItems || 0}
+              value={kpis?.lowStockItems || 0}
               prefix={<WarningOutlined style={{ color: '#faad14' }} />}
-              valueStyle={{ color: stats?.inventory.lowStockItems ? '#faad14' : undefined }}
+              valueStyle={{ color: kpis?.lowStockItems ? '#faad14' : undefined }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card loading={isLoading}>
             <Statistic
-              title="Total Customers"
-              value={stats?.contacts.totalCustomers || 0}
-              prefix={<TeamOutlined style={{ color: '#52c41a' }} />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Total Vendors"
-              value={stats?.contacts.totalVendors || 0}
-              prefix={<TeamOutlined style={{ color: '#722ed1' }} />}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Orders & Invoices */}
-      <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Pending Sales Orders"
-              value={stats?.sales.pendingSalesOrders || 0}
+              title="Pending Orders"
+              value={kpis?.pendingOrders || 0}
               prefix={<ShoppingCartOutlined style={{ color: '#1890ff' }} />}
             />
           </Card>
         </Col>
+      </Row>
+
+      {/* Receivables & Payables */}
+      <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card loading={isLoading}>
             <Statistic
-              title="Unpaid Invoices"
-              value={stats?.sales.unpaidInvoices || 0}
-              prefix={<FileTextOutlined style={{ color: '#ff4d4f' }} />}
-              valueStyle={{ color: stats?.sales.unpaidInvoices ? '#ff4d4f' : undefined }}
+              title="Outstanding Receivables"
+              value={kpis?.receivables?.total || 0}
+              prefix={<RiseOutlined style={{ color: '#52c41a' }} />}
+              formatter={(value) => formatCurrency(Number(value))}
+              valueStyle={{ color: kpis?.receivables?.total ? '#52c41a' : undefined }}
+              suffix={<span style={{ fontSize: 12, color: '#999' }}>({kpis?.receivables?.count || 0})</span>}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
+          <Card loading={isLoading}>
             <Statistic
-              title="Pending Purchase Orders"
-              value={stats?.purchases.pendingPurchaseOrders || 0}
-              prefix={<FileTextOutlined style={{ color: '#13c2c2' }} />}
+              title="Outstanding Payables"
+              value={kpis?.payables?.total || 0}
+              prefix={<FallOutlined style={{ color: '#ff4d4f' }} />}
+              formatter={(value) => formatCurrency(Number(value))}
+              valueStyle={{ color: kpis?.payables?.total ? '#ff4d4f' : undefined }}
+              suffix={<span style={{ fontSize: 12, color: '#999' }}>({kpis?.payables?.count || 0})</span>}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="Unpaid Bills"
-              value={stats?.purchases.unpaidBills || 0}
-              prefix={<DollarOutlined style={{ color: '#eb2f96' }} />}
-              valueStyle={{ color: stats?.purchases.unpaidBills ? '#eb2f96' : undefined }}
-            />
+        <Col xs={24} sm={12} lg={12}>
+          <Card loading={isLoading}>
+            <Row gutter={24}>
+              <Col span={12}>
+                <Statistic
+                  title="Net Position"
+                  value={(kpis?.receivables?.total || 0) - (kpis?.payables?.total || 0)}
+                  formatter={(value) => formatCurrency(Number(value))}
+                  valueStyle={{
+                    color: (kpis?.receivables?.total || 0) >= (kpis?.payables?.total || 0) ? '#52c41a' : '#ff4d4f',
+                  }}
+                />
+              </Col>
+              <Col span={12}>
+                <Statistic
+                  title="Invoices vs Bills"
+                  value={`${kpis?.receivables?.count || 0} / ${kpis?.payables?.count || 0}`}
+                  prefix={<FileTextOutlined style={{ color: '#722ed1' }} />}
+                />
+              </Col>
+            </Row>
           </Card>
         </Col>
       </Row>
 
-      {/* Recent Activity & Tasks */}
-      <Row gutter={[24, 24]}>
+      {/* Charts Row */}
+      <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
-          <Card title="Recent Activity" extra={<Button type="link">View All</Button>}>
-            <List
-              dataSource={recentActivities}
-              renderItem={(item) => (
-                <List.Item>
-                  <List.Item.Meta title={item.action} description={item.time} />
-                </List.Item>
-              )}
-            />
-          </Card>
+          <SalesTrendChart defaultPeriod={12} />
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Action Required" extra={<Button type="link">View All</Button>}>
-            <List
-              dataSource={pendingTasks}
-              renderItem={(item) => (
-                <List.Item>
-                  <Space>
-                    <Tag
-                      color={
-                        item.status === 'error'
-                          ? 'red'
-                          : item.status === 'warning'
-                            ? 'orange'
-                            : 'blue'
-                      }
-                    >
-                      {item.status.toUpperCase()}
-                    </Tag>
-                    <Text>{item.task}</Text>
-                  </Space>
-                </List.Item>
-              )}
-            />
-          </Card>
+          <TopItemsChart limit={10} />
+        </Col>
+      </Row>
+
+      {/* More Charts Row */}
+      <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
+        <Col xs={24} lg={12}>
+          <TopCustomersChart limit={10} />
+        </Col>
+        <Col xs={24} lg={12}>
+          <PendingActionsCard />
+        </Col>
+      </Row>
+
+      {/* Recent Activity Row */}
+      <Row gutter={[24, 24]}>
+        <Col xs={24}>
+          <RecentActivityCard />
         </Col>
       </Row>
     </div>

@@ -1,132 +1,137 @@
 'use client';
 
-import { Card, Row, Col, Typography, List, Space } from 'antd';
+import { Card, Row, Col, Typography, Space } from 'antd';
 import {
   BarChartOutlined,
-  LineChartOutlined,
-  PieChartOutlined,
-  FileTextOutlined,
-  DollarOutlined,
-  ShoppingOutlined,
+  ShoppingCartOutlined,
   TeamOutlined,
   InboxOutlined,
+  DollarOutlined,
+  FileTextOutlined,
+  ClockCircleOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
-interface ReportCategory {
-  title: string;
+interface ReportCard {
   icon: React.ReactNode;
-  reports: {
-    name: string;
-    description: string;
-    href: string;
-  }[];
+  title: string;
+  description: string;
+  href: string;
+  color: string;
 }
 
-const reportCategories: ReportCategory[] = [
+const salesReports: ReportCard[] = [
   {
-    title: 'Inventory Reports',
-    icon: <InboxOutlined style={{ fontSize: 24, color: '#1890ff' }} />,
-    reports: [
-      {
-        name: 'Inventory Summary',
-        description: 'Overall inventory levels and values',
-        href: '/reports/inventory-summary',
-      },
-      {
-        name: 'Stock Aging',
-        description: 'Age analysis of inventory items',
-        href: '/reports/stock-aging',
-      },
-      {
-        name: 'Low Stock Alert',
-        description: 'Items below reorder level',
-        href: '/reports/low-stock',
-      },
-      {
-        name: 'Inventory Valuation',
-        description: 'Total value of stock on hand',
-        href: '/reports/inventory-valuation',
-      },
-    ],
+    icon: <TeamOutlined />,
+    title: 'Sales by Customer',
+    description: 'View sales performance by customer with order counts and revenue totals.',
+    href: '/reports/sales-by-customer',
+    color: '#1890ff',
   },
   {
-    title: 'Sales Reports',
-    icon: <ShoppingOutlined style={{ fontSize: 24, color: '#52c41a' }} />,
-    reports: [
-      {
-        name: 'Sales by Customer',
-        description: 'Sales breakdown by customer',
-        href: '/reports/sales-by-customer',
-      },
-      {
-        name: 'Sales by Item',
-        description: 'Top selling items analysis',
-        href: '/reports/sales-by-item',
-      },
-      {
-        name: 'Sales Order Status',
-        description: 'Status of all sales orders',
-        href: '/reports/sales-order-status',
-      },
-      {
-        name: 'Invoice Aging',
-        description: 'Outstanding invoices by age',
-        href: '/reports/invoice-aging',
-      },
-    ],
+    icon: <AppstoreOutlined />,
+    title: 'Sales by Item',
+    description: 'Analyze top-selling items with quantity sold and average pricing.',
+    href: '/reports/sales-by-item',
+    color: '#52c41a',
   },
   {
-    title: 'Purchase Reports',
-    icon: <FileTextOutlined style={{ fontSize: 24, color: '#722ed1' }} />,
-    reports: [
-      {
-        name: 'Purchase by Vendor',
-        description: 'Purchase breakdown by vendor',
-        href: '/reports/purchase-by-vendor',
-      },
-      {
-        name: 'Purchase by Item',
-        description: 'Most purchased items',
-        href: '/reports/purchase-by-item',
-      },
-      {
-        name: 'Purchase Order Status',
-        description: 'Status of all purchase orders',
-        href: '/reports/po-status',
-      },
-      { name: 'Bill Aging', description: 'Outstanding bills by age', href: '/reports/bill-aging' },
-    ],
-  },
-  {
-    title: 'Financial Reports',
-    icon: <DollarOutlined style={{ fontSize: 24, color: '#faad14' }} />,
-    reports: [
-      {
-        name: 'Accounts Receivable',
-        description: 'Money owed by customers',
-        href: '/reports/accounts-receivable',
-      },
-      {
-        name: 'Accounts Payable',
-        description: 'Money owed to vendors',
-        href: '/reports/accounts-payable',
-      },
-      {
-        name: 'Profit & Loss',
-        description: 'Revenue, costs, and profit',
-        href: '/reports/profit-loss',
-      },
-      {
-        name: 'Cash Flow',
-        description: 'Money coming in and going out',
-        href: '/reports/cash-flow',
-      },
-    ],
+    icon: <ClockCircleOutlined />,
+    title: 'Receivables Aging',
+    description: 'Track outstanding customer invoices by aging bucket.',
+    href: '/reports/receivables-aging',
+    color: '#faad14',
   },
 ];
+
+const inventoryReports: ReportCard[] = [
+  {
+    icon: <InboxOutlined />,
+    title: 'Inventory Summary',
+    description: 'Overview of on-hand, committed, and available inventory levels.',
+    href: '/reports/inventory-summary',
+    color: '#722ed1',
+  },
+  {
+    icon: <DollarOutlined />,
+    title: 'Inventory Valuation',
+    description: 'Calculate total inventory value at cost price by warehouse.',
+    href: '/reports/inventory-valuation',
+    color: '#eb2f96',
+  },
+];
+
+const purchaseReports: ReportCard[] = [
+  {
+    icon: <ClockCircleOutlined />,
+    title: 'Payables Aging',
+    description: 'Track outstanding vendor bills by aging bucket.',
+    href: '/reports/payables-aging',
+    color: '#fa8c16',
+  },
+];
+
+interface ReportSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  reports: ReportCard[];
+}
+
+function ReportSection({ title, icon, reports }: ReportSectionProps) {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <Space style={{ marginBottom: 16 }}>
+        {icon}
+        <Title level={5} style={{ margin: 0 }}>
+          {title}
+        </Title>
+      </Space>
+      <Row gutter={[16, 16]}>
+        {reports.map((report) => (
+          <Col xs={24} sm={12} lg={8} key={report.href}>
+            <Link href={report.href} style={{ textDecoration: 'none' }}>
+              <Card
+                hoverable
+                style={{ height: '100%' }}
+                styles={{
+                  body: { display: 'flex', flexDirection: 'column', height: '100%' },
+                }}
+              >
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <div
+                    style={{
+                      fontSize: 32,
+                      color: report.color,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {report.icon}
+                  </div>
+                  <div>
+                    <Title level={5} style={{ marginBottom: 8 }}>
+                      {report.title}
+                    </Title>
+                    <Paragraph
+                      type="secondary"
+                      style={{ marginBottom: 0, fontSize: 14 }}
+                      ellipsis={{ rows: 2 }}
+                    >
+                      {report.description}
+                    </Paragraph>
+                  </div>
+                </Space>
+              </Card>
+            </Link>
+          </Col>
+        ))}
+      </Row>
+    </div>
+  );
+}
 
 export default function ReportsPage() {
   return (
@@ -135,32 +140,23 @@ export default function ReportsPage() {
         Reports
       </Title>
 
-      <Row gutter={[24, 24]}>
-        {reportCategories.map((category) => (
-          <Col xs={24} lg={12} key={category.title}>
-            <Card
-              title={
-                <Space>
-                  {category.icon}
-                  <span>{category.title}</span>
-                </Space>
-              }
-            >
-              <List
-                dataSource={category.reports}
-                renderItem={(report) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      title={<Link href={report.href}>{report.name}</Link>}
-                      description={report.description}
-                    />
-                  </List.Item>
-                )}
-              />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <ReportSection
+        title="Sales Reports"
+        icon={<ShoppingCartOutlined style={{ fontSize: 20, color: '#1890ff' }} />}
+        reports={salesReports}
+      />
+
+      <ReportSection
+        title="Inventory Reports"
+        icon={<InboxOutlined style={{ fontSize: 20, color: '#722ed1' }} />}
+        reports={inventoryReports}
+      />
+
+      <ReportSection
+        title="Purchase Reports"
+        icon={<FileTextOutlined style={{ fontSize: 20, color: '#fa8c16' }} />}
+        reports={purchaseReports}
+      />
     </div>
   );
 }
