@@ -1,6 +1,6 @@
 # IMS Development Backlog
 
-Last updated: 2026-02-03
+Last updated: 2026-02-04
 
 This document tracks remaining, incomplete, and not-yet-implemented features based on the Implementation Plan and OpenSpec specifications.
 
@@ -58,8 +58,8 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 | Stock levels view | Done | stock-tracking | List with warehouse filter |
 | Stock by item | Done | stock-tracking | Per-warehouse breakdown |
 | Warehouses CRUD | Done | warehouses | Full management |
-| Inventory adjustments | **Partial** | inventory-adjustments | Backend exists, placeholder UI |
-| Inventory transfers | **Partial** | inventory-transfers | Backend exists, placeholder UI |
+| Inventory adjustments | Done | inventory-adjustments | List, create, detail pages |
+| Inventory transfers | Done | inventory-transfers | List, create, detail pages with workflow |
 | Stock valuation | Done | stock-tracking | Cost price calculation |
 | Low stock alerts | Done | stock-tracking | Dashboard integration |
 
@@ -106,17 +106,17 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 | Feature | Status | Spec | Notes |
 |---------|--------|------|-------|
 | Purchase orders list | Done | purchase-orders | Filter, search, pagination |
-| PO create/edit | **Backend Only** | purchase-orders | No frontend form |
-| PO detail | **Backend Only** | purchase-orders | No frontend page |
+| PO create/edit | Done | purchase-orders | Full form with line items |
+| PO detail | Done | purchase-orders | Detail page with actions |
 | PO status workflow | Done | purchase-orders | Issue, receive, cancel |
 | Purchase receives list | Done | purchase-receives | List view |
 | Receive goods | **Backend Only** | purchase-receives | No frontend form |
 | Bills list | Done | bills | Filter, search, pagination |
-| Bill create/edit | **Backend Only** | bills | No frontend form |
-| Bill detail | **Backend Only** | bills | No frontend page |
+| Bill create/edit | Done | bills | Full form with line items |
+| Bill detail | Done | bills | Detail page with actions |
 | Bill from PO | Done | purchase-orders | API action works |
 | Vendor payments list | Done | purchase-payments | List view |
-| Vendor payment recording | **Backend Only** | purchase-payments | No frontend form |
+| Vendor payment recording | Done | purchase-payments | Form with bill allocation |
 | Vendor credits | **Spec Only** | - | Not implemented |
 | Purchase order PDF | Not Started | - | PDF generation needed |
 | Bill PDF | Not Started | - | PDF generation needed |
@@ -242,12 +242,12 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 
 1. ~~**Sales order create/edit form**~~ - ✓ Done (2026-02-03)
 2. ~~**Invoice create/edit form**~~ - ✓ Done (2026-02-03)
-3. **Purchase order create/edit form** - Can't create POs from UI
-4. **Bill create/edit form** - Can't create bills from UI
+3. ~~**Purchase order create/edit form**~~ - ✓ Done (2026-02-04)
+4. ~~**Bill create/edit form**~~ - ✓ Done (2026-02-04)
 5. ~~**Sales payment form**~~ - ✓ Done (2026-02-03)
-6. **Vendor payment form** - Can't record payments from UI
-7. **Inventory adjustments UI** - Currently placeholder
-8. **Inventory transfers UI** - Currently placeholder
+6. ~~**Vendor payment form**~~ - ✓ Done (2026-02-04)
+7. ~~**Inventory adjustments UI**~~ - ✓ Done (2026-02-04)
+8. ~~**Inventory transfers UI**~~ - ✓ Done (2026-02-04)
 9. ~~**Document detail pages (Sales)**~~ - ✓ Done: SO, Invoice, Payment detail views (2026-02-03)
 
 ### Medium Priority (P1) - Business Features
@@ -299,12 +299,12 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 | Category | Specs | Done | Partial | Not Started |
 |----------|-------|------|---------|-------------|
 | Phase 1 (Foundation) | 11 | 11 | 0 | 0 |
-| Phase 2 (Core) | 18 | 10 | 4 | 4 |
-| Phase 3 (Transactions) | 24 | 14 | 4 | 6 |
+| Phase 2 (Core) | 18 | 12 | 2 | 4 |
+| Phase 3 (Transactions) | 24 | 19 | 0 | 5 |
 | Phase 4 (Compliance) | 16 | 0 | 3 | 13 |
 | Phase 5 (Reports) | 14 | 1 | 4 | 9 |
 | Phase 6 (Advanced) | 9 | 0 | 0 | 9 |
 | Phase 7 (Mobile) | 8 | 0 | 0 | 8 |
-| **Total** | **100** | **36** | **15** | **49** |
+| **Total** | **100** | **43** | **9** | **48** |
 
-**Overall Progress: ~36% Complete**
+**Overall Progress: ~43% Complete**
