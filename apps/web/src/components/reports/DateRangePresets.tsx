@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Space } from 'antd';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 
 interface DateRangePresetsProps {
   onChange: (fromDate: string, toDate: string) => void;

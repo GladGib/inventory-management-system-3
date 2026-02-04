@@ -1,0 +1,24 @@
+<div class="address-block">
+  <div class="address-block-title">{{title}}</div>
+  <div class="address-name">{{contact.displayName}}</div>
+  {{#ifExists contact.companyName}}
+  <div class="address-company">{{contact.companyName}}</div>
+  {{/ifExists}}
+  {{#ifExists address}}
+  <div class="address-lines">
+    {{#ifExists address.line1}}{{address.line1}}<br>{{/ifExists}}
+    {{#ifExists address.line2}}{{address.line2}}<br>{{/ifExists}}
+    {{#ifExists address.city}}{{address.city}}, {{/ifExists}}
+    {{#ifExists address.state}}{{address.state}} {{/ifExists}}
+    {{#ifExists address.postcode}}{{address.postcode}}{{/ifExists}}
+    {{#ifExists address.country}}<br>{{address.country}}{{/ifExists}}
+  </div>
+  {{/ifExists}}
+  <div class="contact-info">
+    {{#ifExists contact.phone}}<p>Tel: {{contact.phone}}</p>{{/ifExists}}
+    {{#ifExists contact.email}}<p>Email: {{contact.email}}</p>{{/ifExists}}
+  </div>
+  {{#ifExists contact.taxNumber}}
+  <div class="tax-number">SST No: {{contact.taxNumber}}</div>
+  {{/ifExists}}
+</div>

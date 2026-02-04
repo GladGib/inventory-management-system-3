@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { ExcelExportService, ReportData } from './services/excel-export.service';
+import { PdfExportService } from './services/pdf-export.service';
 
 interface DateRange {
   fromDate: Date;
@@ -11,9 +13,361 @@ interface PaginationOptions {
   limit?: number;
 }
 
+interface StockAgingFilters {
+  warehouseId?: string;
+  categoryId?: string;
+  asOfDate?: Date;
+  buckets?: number[];
+  slowMovingThreshold?: number;
+}
+
+export interface AgeBucket {
+  label: string;
+  minDays: number;
+  maxDays: number;
+  itemCount: number;
+  quantity: number;
+  value: number;
+  percentOfValue: number;
+}
+
+export interface StockAgingItem {
+  itemId: string;
+  sku: string;
+  itemName: string;
+  category: string;
+  warehouse: string;
+  quantity: number;
+  unitCost: number;
+  totalValue: number;
+  lastReceiveDate: Date | null;
+  lastSaleDate: Date | null;
+  ageDays: number;
+  ageBucket: string;
+  daysSinceLastSale: number | null;
+  isSlowMoving: boolean;
+  turnoverRate: number;
+}
+
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly excelExportService: ExcelExportService,
+    private readonly pdfExportService: PdfExportService,
+  ) {}
+
+  // ============ Stock Aging Report ============
+
+  async getStockAgingReport(
+    organizationId: string,
+    filters: StockAgingFilters = {}
+  ) {
+    const {
+      warehouseId,
+      categoryId,
+      asOfDate = new Date(),
+      buckets = [30, 60, 90, 180],
+      slowMovingThreshold = 90,
+    } = filters;
+
+    // Build where clause for items
+    const itemWhere: any = {
+      organizationId,
+      status: 'ACTIVE',
+      trackInventory: true,
+    };
+
+    if (categoryId) {
+      itemWhere.categoryId = categoryId;
+    }
+
+    // Get all inventory items with stock levels
+    const items = await this.prisma.item.findMany({
+      where: itemWhere,
+      include: {
+        category: { select: { name: true } },
+        stockLevels: warehouseId
+          ? { where: { warehouseId }, include: { warehouse: true } }
+          : { include: { warehouse: true } },
+        purchaseReceiveItems: {
+          orderBy: { purchaseReceive: { receiveDate: 'desc' } },
+          take: 1,
+          include: {
+            purchaseReceive: { select: { receiveDate: true } },
+          },
+        },
+        invoiceItems: {
+          orderBy: { invoice: { invoiceDate: 'desc' } },
+          take: 1,
+          include: {
+            invoice: { select: { invoiceDate: true } },
+          },
+        },
+      },
+    });
+
+    // Calculate aging for each item
+    const agingItems: StockAgingItem[] = [];
+    const ageBucketCounts: Map<string, { count: number; quantity: number; value: number }> = new Map();
+
+    // Initialize buckets
+    const bucketLabels = this.generateBucketLabels(buckets);
+    bucketLabels.forEach((label) => {
+      ageBucketCounts.set(label, { count: 0, quantity: 0, value: 0 });
+    });
+
+    let totalValue = 0;
+    let totalQuantity = 0;
+    let slowMovingCount = 0;
+    let slowMovingValue = 0;
+    let totalAgeDays = 0;
+    let itemCount = 0;
+
+    for (const item of items) {
+      // Calculate total stock
+      const stockOnHand = item.stockLevels.reduce(
+        (sum, sl) => sum + Number(sl.stockOnHand),
+        0
+      );
+
+      if (stockOnHand <= 0) continue;
+
+      const unitCost = Number(item.costPrice);
+      const itemValue = stockOnHand * unitCost;
+
+      // Get warehouse name(s)
+      const warehouseName = item.stockLevels.length > 0
+        ? item.stockLevels.map((sl) => sl.warehouse.name).join(', ')
+        : 'N/A';
+
+      // Get last receive date
+      const lastReceiveDate = item.purchaseReceiveItems.length > 0
+        ? item.purchaseReceiveItems[0].purchaseReceive.receiveDate
+        : null;
+
+      // Get last sale date
+      const lastSaleDate = item.invoiceItems.length > 0
+        ? item.invoiceItems[0].invoice.invoiceDate
+        : null;
+
+      // Calculate age (from last receive date or item creation date)
+      const ageReferenceDate = lastReceiveDate || item.createdAt;
+      const ageDays = Math.floor(
+        (asOfDate.getTime() - ageReferenceDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      // Determine age bucket
+      const ageBucket = this.getAgeBucket(ageDays, buckets);
+
+      // Calculate days since last sale
+      const daysSinceLastSale = lastSaleDate
+        ? Math.floor((asOfDate.getTime() - lastSaleDate.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      // Determine if slow moving
+      const isSlowMoving = daysSinceLastSale === null
+        ? ageDays > slowMovingThreshold
+        : daysSinceLastSale > slowMovingThreshold;
+
+      // Calculate turnover rate (simplified: sales qty / avg stock over 365 days)
+      // For now, use a simplified calculation
+      const turnoverRate = 0; // Would need historical data for accurate calculation
+
+      const agingItem: StockAgingItem = {
+        itemId: item.id,
+        sku: item.sku,
+        itemName: item.name,
+        category: item.category?.name || 'Uncategorized',
+        warehouse: warehouseName,
+        quantity: stockOnHand,
+        unitCost,
+        totalValue: itemValue,
+        lastReceiveDate,
+        lastSaleDate,
+        ageDays,
+        ageBucket,
+        daysSinceLastSale,
+        isSlowMoving,
+        turnoverRate,
+      };
+
+      agingItems.push(agingItem);
+
+      // Update bucket counts
+      const bucketData = ageBucketCounts.get(ageBucket);
+      if (bucketData) {
+        bucketData.count++;
+        bucketData.quantity += stockOnHand;
+        bucketData.value += itemValue;
+      }
+
+      // Update totals
+      totalValue += itemValue;
+      totalQuantity += stockOnHand;
+      totalAgeDays += ageDays;
+      itemCount++;
+
+      if (isSlowMoving) {
+        slowMovingCount++;
+        slowMovingValue += itemValue;
+      }
+    }
+
+    // Build bucket response with percentages
+    const ageBuckets: AgeBucket[] = [];
+    let minDays = 0;
+    for (let i = 0; i < bucketLabels.length; i++) {
+      const label = bucketLabels[i];
+      const data = ageBucketCounts.get(label)!;
+      const maxDays = i < buckets.length ? buckets[i] : Infinity;
+
+      ageBuckets.push({
+        label,
+        minDays,
+        maxDays: maxDays === Infinity ? 999999 : maxDays,
+        itemCount: data.count,
+        quantity: data.quantity,
+        value: Math.round(data.value * 100) / 100,
+        percentOfValue: totalValue > 0 ? Math.round((data.value / totalValue) * 10000) / 100 : 0,
+      });
+
+      minDays = maxDays + 1;
+    }
+
+    return {
+      summary: {
+        totalItems: itemCount,
+        totalQuantity: Math.round(totalQuantity * 100) / 100,
+        totalValue: Math.round(totalValue * 100) / 100,
+        avgAge: itemCount > 0 ? Math.round(totalAgeDays / itemCount) : 0,
+        slowMovingCount,
+        slowMovingValue: Math.round(slowMovingValue * 100) / 100,
+      },
+      buckets: ageBuckets,
+      items: agingItems.sort((a, b) => b.ageDays - a.ageDays),
+      asOfDate: asOfDate.toISOString(),
+      filters: {
+        warehouseId,
+        categoryId,
+        slowMovingThreshold,
+      },
+    };
+  }
+
+  private generateBucketLabels(buckets: number[]): string[] {
+    const labels: string[] = [];
+    let prevBucket = 0;
+
+    for (const bucket of buckets) {
+      labels.push(`${prevBucket}-${bucket} days`);
+      prevBucket = bucket + 1;
+    }
+
+    labels.push(`${prevBucket}+ days`);
+    return labels;
+  }
+
+  private getAgeBucket(ageDays: number, buckets: number[]): string {
+    let prevBucket = 0;
+
+    for (const bucket of buckets) {
+      if (ageDays <= bucket) {
+        return `${prevBucket}-${bucket} days`;
+      }
+      prevBucket = bucket + 1;
+    }
+
+    return `${prevBucket}+ days`;
+  }
+
+  // ============ Export Methods ============
+
+  async exportStockAgingToExcel(
+    organizationId: string,
+    filters: StockAgingFilters = {}
+  ): Promise<Buffer> {
+    const report = await this.getStockAgingReport(organizationId, filters);
+
+    const reportData: ReportData = {
+      title: 'Stock Aging Report',
+      columns: [
+        { title: 'SKU', dataIndex: 'sku', type: 'string' },
+        { title: 'Item Name', dataIndex: 'itemName', type: 'string' },
+        { title: 'Category', dataIndex: 'category', type: 'string' },
+        { title: 'Warehouse', dataIndex: 'warehouse', type: 'string' },
+        { title: 'Quantity', dataIndex: 'quantity', type: 'number' },
+        { title: 'Unit Cost', dataIndex: 'unitCost', type: 'currency' },
+        { title: 'Total Value', dataIndex: 'totalValue', type: 'currency' },
+        { title: 'Age (Days)', dataIndex: 'ageDays', type: 'number' },
+        { title: 'Age Bucket', dataIndex: 'ageBucket', type: 'string' },
+        { title: 'Last Received', dataIndex: 'lastReceiveDate', type: 'date' },
+        { title: 'Last Sold', dataIndex: 'lastSaleDate', type: 'date' },
+        { title: 'Days Since Sale', dataIndex: 'daysSinceLastSale', type: 'number' },
+        { title: 'Slow Moving', dataIndex: 'isSlowMoving', type: 'string' },
+      ],
+      rows: report.items.map((item) => ({
+        ...item,
+        isSlowMoving: item.isSlowMoving ? 'Yes' : 'No',
+      })),
+      summary: {
+        sku: 'TOTAL',
+        quantity: report.summary.totalQuantity,
+        totalValue: report.summary.totalValue,
+      },
+      filters: {
+        'As of Date': new Date(report.asOfDate).toLocaleDateString('en-MY'),
+        ...(filters.warehouseId && { 'Warehouse': filters.warehouseId }),
+        ...(filters.categoryId && { 'Category': filters.categoryId }),
+      },
+      generatedAt: new Date(),
+    };
+
+    return this.excelExportService.generateWorkbook(reportData);
+  }
+
+  async exportStockAgingToPdf(
+    organizationId: string,
+    filters: StockAgingFilters = {}
+  ): Promise<Buffer> {
+    const report = await this.getStockAgingReport(organizationId, filters);
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true, phone: true, email: true, address: true },
+    });
+
+    const reportData: ReportData = {
+      title: 'Stock Aging Report',
+      columns: [
+        { title: 'SKU', dataIndex: 'sku', type: 'string' },
+        { title: 'Item', dataIndex: 'itemName', type: 'string' },
+        { title: 'Qty', dataIndex: 'quantity', type: 'number' },
+        { title: 'Value', dataIndex: 'totalValue', type: 'currency' },
+        { title: 'Age', dataIndex: 'ageDays', type: 'number' },
+        { title: 'Bucket', dataIndex: 'ageBucket', type: 'string' },
+        { title: 'Slow', dataIndex: 'isSlowMoving', type: 'string' },
+      ],
+      rows: report.items.slice(0, 100).map((item) => ({
+        ...item,
+        isSlowMoving: item.isSlowMoving ? 'Yes' : 'No',
+      })),
+      summary: {
+        sku: 'TOTAL',
+        quantity: report.summary.totalQuantity,
+        totalValue: report.summary.totalValue,
+      },
+      filters: {
+        'As of Date': new Date(report.asOfDate).toLocaleDateString('en-MY'),
+      },
+      generatedAt: new Date(),
+    };
+
+    return this.pdfExportService.generateReportPdf(reportData, {
+      name: org?.name || 'Organization',
+      phone: org?.phone || undefined,
+      email: org?.email || undefined,
+    });
+  }
 
   // ============ Sales Reports ============
 

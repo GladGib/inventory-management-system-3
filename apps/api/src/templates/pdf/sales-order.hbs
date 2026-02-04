@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Order - {{documentNumber}}</title>
+  {{> styles}}
+</head>
+<body>
+  <div class="document">
+    <!-- Header -->
+    {{> document-header
+        documentTitle="Sales Order"
+        documentNumber=documentNumber
+        documentDate=orderDate
+        documentDateLabel="Order Date"
+        status=status
+        organization=organization
+    }}
+
+    <!-- Customer Info and Order Details -->
+    <div class="info-grid">
+      {{> address-block
+          title="Bill To"
+          contact=customer
+          address=customer.billingAddress
+      }}
+
+      <div class="document-info-box">
+        <div class="info-row">
+          <span class="info-label">Order Date</span>
+          <span class="info-value">{{formatDate orderDate}}</span>
+        </div>
+        {{#ifExists expectedShipDate}}
+        <div class="info-row">
+          <span class="info-label">Expected Ship Date</span>
+          <span class="info-value">{{formatDate expectedShipDate}}</span>
+        </div>
+        {{/ifExists}}
+        <div class="info-row">
+          <span class="info-label">Order Status</span>
+          <span class="info-value">{{status}}</span>
+        </div>
+        {{#ifExists customer.taxNumber}}
+        <div class="info-row">
+          <span class="info-label">Customer SST No</span>
+          <span class="info-value">{{customer.taxNumber}}</span>
+        </div>
+        {{/ifExists}}
+      </div>
+    </div>
+
+    {{#ifExists customer.shippingAddress}}
+    <!-- Shipping Address if different -->
+    <div class="info-grid" style="margin-top: -15px;">
+      {{> address-block
+          title="Ship To"
+          contact=customer
+          address=customer.shippingAddress
+      }}
+      <div></div>
+    </div>
+    {{/ifExists}}
+
+    <!-- Line Items -->
+    {{> line-items-table items=items showDiscount=true}}
+
+    <!-- Totals -->
+    {{> totals-section
+        subtotal=subtotal
+        discountAmount=discountAmount
+        shippingCharges=shippingCharges
+        taxAmount=taxAmount
+        total=total
+    }}
+
+    <!-- Notes -->
+    {{#ifExists notes}}
+    <div class="notes-section">
+      <div class="notes-title">Notes</div>
+      <div class="notes-content">{{notes}}</div>
+    </div>
+    {{/ifExists}}
+
+    <!-- Terms and Conditions -->
+    {{#ifExists termsConditions}}
+    <div class="terms-section">
+      <div class="terms-title">Terms & Conditions</div>
+      <div class="terms-content">{{termsConditions}}</div>
+    </div>
+    {{/ifExists}}
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-label">Authorized Signature</div>
+      </div>
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-label">Customer Signature</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    {{> document-footer organization=organization}}
+  </div>
+</body>
+</html>

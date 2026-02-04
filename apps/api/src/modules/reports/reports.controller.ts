@@ -4,6 +4,9 @@ import {
   Query,
   Param,
   UseGuards,
+  Res,
+  StreamableFile,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -12,7 +15,8 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { ReportsService } from './reports.service';
+import { Response } from 'express';
+import { ReportsService, AgeBucket, StockAgingItem } from './reports.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -187,5 +191,51 @@ export class ReportsController {
     @CurrentUser('organizationId') organizationId: string
   ) {
     return this.reportsService.getPayablesAging(organizationId);
+  }
+
+  // ============ Stock Aging Report ============
+
+  @Get('inventory/stock-aging')
+  @ApiOperation({ summary: 'Get stock aging report' })
+  @ApiResponse({ status: 200, description: 'Stock aging report' })
+  @ApiQuery({ name: 'warehouseId', required: false })
+  @ApiQuery({ name: 'categoryId', required: false })
+  @ApiQuery({ name: 'asOfDate', required: false })
+  @ApiQuery({ name: 'format', required: false, enum: ['json', 'xlsx', 'pdf'] })
+  async getStockAgingReport(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('warehouseId') warehouseId?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('asOfDate') asOfDate?: string,
+    @Query('format') format?: 'json' | 'xlsx' | 'pdf',
+    @Res({ passthrough: true }) res?: Response
+  ) {
+    const filters = {
+      warehouseId,
+      categoryId,
+      asOfDate: asOfDate ? new Date(asOfDate) : undefined,
+    };
+
+    if (format === 'xlsx') {
+      const buffer = await this.reportsService.exportStockAgingToExcel(organizationId, filters);
+      const filename = `stock-aging-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      res!.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res!.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      return new StreamableFile(buffer);
+    }
+
+    if (format === 'pdf') {
+      const buffer = await this.reportsService.exportStockAgingToPdf(organizationId, filters);
+      const filename = `stock-aging-report-${new Date().toISOString().split('T')[0]}.html`;
+
+      res!.setHeader('Content-Type', 'text/html');
+      res!.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      return new StreamableFile(buffer);
+    }
+
+    return this.reportsService.getStockAgingReport(organizationId, filters);
   }
 }

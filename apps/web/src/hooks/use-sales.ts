@@ -5,14 +5,21 @@ import {
   SalesOrder,
   Invoice,
   Payment,
+  SalesReturn,
+  CreditNote,
   SalesOrderQueryParams,
   InvoiceQueryParams,
   PaymentQueryParams,
+  SalesReturnQueryParams,
+  CreditNoteQueryParams,
   PaginatedResponse,
   CreateSalesOrderDto,
   UpdateSalesOrderDto,
   CreateInvoiceDto,
   CreatePaymentDto,
+  CreateSalesReturnDto,
+  UpdateSalesReturnDto,
+  ApplyCreditNoteDto,
 } from '@/lib/sales';
 
 // Query keys
@@ -27,6 +34,13 @@ export const salesKeys = {
   payments: () => [...salesKeys.all, 'payments'] as const,
   paymentList: (params: PaymentQueryParams) => [...salesKeys.payments(), 'list', params] as const,
   paymentDetail: (id: string) => [...salesKeys.payments(), 'detail', id] as const,
+  returns: () => [...salesKeys.all, 'returns'] as const,
+  returnList: (params: SalesReturnQueryParams) => [...salesKeys.returns(), 'list', params] as const,
+  returnDetail: (id: string) => [...salesKeys.returns(), 'detail', id] as const,
+  creditNotes: () => [...salesKeys.all, 'creditNotes'] as const,
+  creditNoteList: (params: CreditNoteQueryParams) =>
+    [...salesKeys.creditNotes(), 'list', params] as const,
+  creditNoteDetail: (id: string) => [...salesKeys.creditNotes(), 'detail', id] as const,
 };
 
 // ============ Sales Orders ============
@@ -235,6 +249,155 @@ export function useCreatePayment() {
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to record payment');
+    },
+  });
+}
+
+// ============ Sales Returns ============
+
+export function useSalesReturns(params?: SalesReturnQueryParams) {
+  return useQuery<PaginatedResponse<SalesReturn>>({
+    queryKey: salesKeys.returnList(params || {}),
+    queryFn: () => salesService.getSalesReturns(params),
+  });
+}
+
+export function useSalesReturn(id: string) {
+  return useQuery<SalesReturn>({
+    queryKey: salesKeys.returnDetail(id),
+    queryFn: () => salesService.getSalesReturn(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSalesReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateSalesReturnDto) => salesService.createSalesReturn(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.returns() });
+      message.success('Sales return created successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to create sales return');
+    },
+  });
+}
+
+export function useUpdateSalesReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateSalesReturnDto }) =>
+      salesService.updateSalesReturn(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.returns() });
+      queryClient.invalidateQueries({ queryKey: salesKeys.returnDetail(id) });
+      message.success('Sales return updated successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to update sales return');
+    },
+  });
+}
+
+export function useApproveSalesReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => salesService.approveSalesReturn(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.returns() });
+      queryClient.invalidateQueries({ queryKey: salesKeys.returnDetail(id) });
+      message.success('Sales return approved');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to approve sales return');
+    },
+  });
+}
+
+export function useReceiveSalesReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => salesService.receiveSalesReturn(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.returns() });
+      queryClient.invalidateQueries({ queryKey: salesKeys.returnDetail(id) });
+      message.success('Sales return received - stock restored');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to receive sales return');
+    },
+  });
+}
+
+export function useProcessSalesReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => salesService.processSalesReturn(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.returns() });
+      queryClient.invalidateQueries({ queryKey: salesKeys.returnDetail(id) });
+      queryClient.invalidateQueries({ queryKey: salesKeys.creditNotes() });
+      message.success('Sales return processed - credit note generated');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to process sales return');
+    },
+  });
+}
+
+export function useRejectSalesReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => salesService.rejectSalesReturn(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.returns() });
+      queryClient.invalidateQueries({ queryKey: salesKeys.returnDetail(id) });
+      message.success('Sales return rejected');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to reject sales return');
+    },
+  });
+}
+
+// ============ Credit Notes ============
+
+export function useCreditNotes(params?: CreditNoteQueryParams) {
+  return useQuery<PaginatedResponse<CreditNote>>({
+    queryKey: salesKeys.creditNoteList(params || {}),
+    queryFn: () => salesService.getCreditNotes(params),
+  });
+}
+
+export function useCreditNote(id: string) {
+  return useQuery<CreditNote>({
+    queryKey: salesKeys.creditNoteDetail(id),
+    queryFn: () => salesService.getCreditNote(id),
+    enabled: !!id,
+  });
+}
+
+export function useApplyCreditNote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ApplyCreditNoteDto }) =>
+      salesService.applyCreditNote(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: salesKeys.creditNotes() });
+      queryClient.invalidateQueries({ queryKey: salesKeys.creditNoteDetail(id) });
+      queryClient.invalidateQueries({ queryKey: salesKeys.invoices() });
+      message.success('Credit note applied successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to apply credit note');
     },
   });
 }

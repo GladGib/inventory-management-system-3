@@ -1,10 +1,7 @@
 'use client';
 
 import { Card, List, Skeleton, Empty, Typography, Tag } from 'antd';
-import {
-  FileTextOutlined,
-  ShoppingCartOutlined,
-} from '@ant-design/icons';
+import { FileTextOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { useDashboardOverview } from '@/hooks/use-dashboard';
 import Link from 'next/link';
 
@@ -28,9 +25,7 @@ interface RecentOrder {
   customer: { displayName: string };
 }
 
-type ActivityItem =
-  | { type: 'invoice'; data: RecentInvoice }
-  | { type: 'order'; data: RecentOrder };
+type ActivityItem = { type: 'invoice'; data: RecentInvoice } | { type: 'order'; data: RecentOrder };
 
 /**
  * RecentActivityCard - Activity feed from recent invoices and orders
@@ -104,13 +99,20 @@ export function RecentActivityCard() {
           renderItem={(activity) => {
             const isInvoice = activity.type === 'invoice';
             const data = activity.data;
-            const number = isInvoice ? (data as RecentInvoice).invoiceNumber : (data as RecentOrder).orderNumber;
-            const date = isInvoice ? (data as RecentInvoice).invoiceDate : (data as RecentOrder).orderDate;
+            const number = isInvoice
+              ? (data as RecentInvoice).invoiceNumber
+              : (data as RecentOrder).orderNumber;
+            const date = isInvoice
+              ? (data as RecentInvoice).invoiceDate
+              : (data as RecentOrder).orderDate;
             const link = isInvoice ? `/sales/invoices/${data.id}` : `/sales/orders/${data.id}`;
 
             return (
               <List.Item>
-                <Link href={link} style={{ width: '100%', textDecoration: 'none', color: 'inherit' }}>
+                <Link
+                  href={link}
+                  style={{ width: '100%', textDecoration: 'none', color: 'inherit' }}
+                >
                   <List.Item.Meta
                     avatar={
                       isInvoice ? (

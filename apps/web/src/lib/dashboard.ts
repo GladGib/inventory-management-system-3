@@ -134,7 +134,9 @@ export const dashboardService = {
   },
 
   async getSalesTrend(months: number = 12): Promise<SalesTrendData[]> {
-    const response = await api.get<SalesTrendResponse>('/dashboard/sales-trend', { params: { months } });
+    const response = await api.get<SalesTrendResponse>('/dashboard/sales-trend', {
+      params: { months },
+    });
     // Extract data array from wrapped response
     return response.data.data || [];
   },
@@ -146,7 +148,9 @@ export const dashboardService = {
   },
 
   async getTopCustomers(limit: number = 10): Promise<TopCustomer[]> {
-    const response = await api.get<TopCustomersResponse>('/dashboard/top-customers', { params: { limit } });
+    const response = await api.get<TopCustomersResponse>('/dashboard/top-customers', {
+      params: { limit },
+    });
     // Extract customers array from wrapped response
     return response.data.customers || [];
   },

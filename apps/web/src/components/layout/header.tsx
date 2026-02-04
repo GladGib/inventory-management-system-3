@@ -19,7 +19,7 @@ interface HeaderProps {
   collapsed: boolean;
 }
 
-export function Header({ collapsed }: HeaderProps) {
+export function Header(_props: HeaderProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
 

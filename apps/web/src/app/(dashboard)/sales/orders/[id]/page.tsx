@@ -21,7 +21,6 @@ import {
   ArrowLeftOutlined,
   EditOutlined,
   CheckOutlined,
-  SendOutlined,
   CloseOutlined,
   FileTextOutlined,
   ExclamationCircleOutlined,

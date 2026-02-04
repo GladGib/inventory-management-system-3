@@ -35,6 +35,7 @@ export default function RegisterPage() {
   });
 
   const onFinish = (values: RegisterData & { confirmPassword: string }) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { confirmPassword, ...registerData } = values;
     registerMutation.mutate(registerData);
   };

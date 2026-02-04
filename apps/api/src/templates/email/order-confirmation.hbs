@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #722ed1 0%, #531dab 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .content {
+      padding: 30px;
+    }
+    .order-details {
+      background: #f9f0ff;
+      padding: 20px;
+      border-radius: 6px;
+      margin: 20px 0;
+      border-left: 4px solid #722ed1;
+    }
+    .order-details p {
+      margin: 8px 0;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .items-table th {
+      background: #722ed1;
+      color: white;
+      padding: 12px;
+      text-align: left;
+    }
+    .items-table td {
+      padding: 12px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .items-table .number {
+      text-align: right;
+    }
+    .total-row {
+      background: #f9f0ff;
+      font-weight: bold;
+    }
+    .footer {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-top: 1px solid #e8e8e8;
+      color: #666;
+      font-size: 13px;
+    }
+    .label {
+      font-weight: 600;
+      color: #666;
+      display: inline-block;
+      width: 160px;
+    }
+    .signature {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e8e8e8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Order Confirmation</h1>
+      <p style="margin: 10px 0 0 0; opacity: 0.9;">{{organization.name}}</p>
+    </div>
+
+    <div class="content">
+      <p>Dear {{customer.displayName}},</p>
+
+      <p>Thank you for your order! We are pleased to confirm that we have received your order and it is being processed.</p>
+
+      <div class="order-details">
+        <p><span class="label">Order Number:</span> <strong>{{order.orderNumber}}</strong></p>
+        <p><span class="label">Order Date:</span> {{formatDate order.orderDate}}</p>
+        {{#if order.expectedShipDate}}
+        <p><span class="label">Expected Ship Date:</span> {{formatDate order.expectedShipDate}}</p>
+        {{/if}}
+        {{#if order.referenceNumber}}
+        <p><span class="label">Your Reference:</span> {{order.referenceNumber}}</p>
+        {{/if}}
+      </div>
+
+      <h3 style="color: #722ed1; margin-bottom: 15px;">Order Items</h3>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="number">Qty</th>
+            <th class="number">Price</th>
+            <th class="number">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each items}}
+          <tr>
+            <td>{{this.item.name}}</td>
+            <td class="number">{{this.quantity}}</td>
+            <td class="number">{{formatCurrency this.rate}}</td>
+            <td class="number">{{formatCurrency this.amount}}</td>
+          </tr>
+          {{/each}}
+          {{#if order.discountAmount}}
+          <tr>
+            <td colspan="3" class="number">Discount:</td>
+            <td class="number">-{{formatCurrency order.discountAmount}}</td>
+          </tr>
+          {{/if}}
+          {{#if order.taxAmount}}
+          <tr>
+            <td colspan="3" class="number">Tax:</td>
+            <td class="number">{{formatCurrency order.taxAmount}}</td>
+          </tr>
+          {{/if}}
+          <tr class="total-row">
+            <td colspan="3" class="number"><strong>Total:</strong></td>
+            <td class="number"><strong>{{formatCurrency order.total}}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>We will notify you once your order has been shipped.</p>
+
+      <p>If you have any questions about your order, please don't hesitate to contact us.</p>
+
+      {{#if signature}}
+      <div class="signature">
+        {{{signature}}}
+      </div>
+      {{/if}}
+    </div>
+
+    <div class="footer">
+      <p><strong>{{organization.name}}</strong></p>
+      {{#if organization.phone}}<p>Phone: {{organization.phone}}</p>{{/if}}
+      {{#if organization.email}}<p>Email: {{organization.email}}</p>{{/if}}
+      <p style="margin-top: 15px; font-size: 11px; color: #999;">
+        This order confirmation was sent from IMS - Inventory Management System
+      </p>
+    </div>
+  </div>
+</body>
+</html>

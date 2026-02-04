@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Breadcrumb, Table, Card, Typography, Empty, Skeleton, Tag } from 'antd';
+import { Breadcrumb, Table, Card, Typography, Empty, Skeleton } from 'antd';
 import { HomeOutlined, BarChartOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,6 +29,7 @@ export default function SalesByCustomerPage() {
     setPage(1); // Reset to first page on filter change
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleTableChange = (pagination: any) => {
     setPage(pagination.current);
     setPageSize(pagination.pageSize);

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   reportsService,
   DateRange,
@@ -10,6 +10,8 @@ import {
   PayablesAgingResponse,
   InventorySummaryResponse,
   InventoryValuationResponse,
+  StockAgingResponse,
+  StockAgingFilters,
 } from '@/lib/reports';
 
 // Query keys
@@ -87,4 +89,44 @@ export function usePayablesAging() {
     queryKey: reportKeys.payablesAging(),
     queryFn: () => reportsService.getPayablesAging(),
   });
+}
+
+// ============ Stock Aging Report Queries ============
+
+export function useStockAging(filters?: StockAgingFilters) {
+  return useQuery<StockAgingResponse>({
+    queryKey: [...reportKeys.inventory(), 'stock-aging', filters],
+    queryFn: () => reportsService.getStockAging(filters),
+  });
+}
+
+// ============ Export Utilities ============
+
+export function useExportReport() {
+  return useMutation({
+    mutationFn: async ({
+      reportType,
+      format,
+      params,
+    }: {
+      reportType: string;
+      format: 'xlsx' | 'pdf';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      params?: Record<string, any>;
+    }) => {
+      const blob = await reportsService.exportReport(reportType, format, params);
+      return blob;
+    },
+  });
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 }

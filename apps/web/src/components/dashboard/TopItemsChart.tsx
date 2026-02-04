@@ -24,14 +24,16 @@ export function TopItemsChart({ limit = 10 }: TopItemsChartProps) {
   const { data, isLoading } = useTopItems(limit);
 
   const chartData =
-    data?.map((topItem) => {
-      const itemName = topItem.item?.name || 'Unknown Item';
-      return {
-        item: itemName.length > 30 ? itemName.substring(0, 30) + '...' : itemName,
-        value: topItem.revenue,
-        quantity: topItem.quantitySold,
-      };
-    }).filter((item) => item.value > 0) || [];
+    data
+      ?.map((topItem) => {
+        const itemName = topItem.item?.name || 'Unknown Item';
+        return {
+          item: itemName.length > 30 ? itemName.substring(0, 30) + '...' : itemName,
+          value: topItem.revenue,
+          quantity: topItem.quantitySold,
+        };
+      })
+      .filter((item) => item.value > 0) || [];
 
   const config = {
     data: chartData,

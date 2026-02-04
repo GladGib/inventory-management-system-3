@@ -21,6 +21,7 @@ export default function InventoryValuationPage() {
 
   const { data, isLoading } = useInventoryValuation(warehouseId, { page, limit: pageSize });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleTableChange = (pagination: any) => {
     setPage(pagination.current);
     setPageSize(pagination.pageSize);

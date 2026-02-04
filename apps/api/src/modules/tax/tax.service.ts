@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateTaxRateDto, UpdateTaxRateDto, MALAYSIAN_TAX_RATES } from './dto/create-tax-rate.dto';
+import { UpdateOrganizationTaxSettingsDto } from './dto/organization-tax-settings.dto';
 
 export interface TaxCalculationResult {
   subtotal: number;
@@ -13,6 +15,7 @@ export interface TaxCalculationResult {
   taxBreakdown: {
     taxRateId: string;
     taxRateName: string;
+    taxRateCode: string;
     rate: number;
     taxableAmount: number;
     taxAmount: number;
@@ -31,6 +34,15 @@ export class TaxService {
   // ============ Tax Rate Management ============
 
   async createTaxRate(organizationId: string, dto: CreateTaxRateDto) {
+    // Check for duplicate code
+    const existingCode = await this.prisma.taxRate.findFirst({
+      where: { organizationId, code: dto.code },
+    });
+
+    if (existingCode) {
+      throw new ConflictException(`Tax rate with code "${dto.code}" already exists`);
+    }
+
     // If setting as default, unset other defaults
     if (dto.isDefault) {
       await this.prisma.taxRate.updateMany({
@@ -41,7 +53,15 @@ export class TaxService {
 
     return this.prisma.taxRate.create({
       data: {
-        ...dto,
+        name: dto.name,
+        code: dto.code,
+        rate: dto.rate,
+        type: dto.type,
+        description: dto.description,
+        isDefault: dto.isDefault ?? false,
+        isActive: dto.isActive ?? true,
+        effectiveFrom: dto.effectiveFrom ? new Date(dto.effectiveFrom) : null,
+        effectiveTo: dto.effectiveTo ? new Date(dto.effectiveTo) : null,
         organizationId,
       },
     });
@@ -52,16 +72,18 @@ export class TaxService {
     filters?: {
       type?: string;
       status?: string;
+      isActive?: boolean;
       page?: number;
       limit?: number;
     }
   ) {
-    const { type, status, page = 1, limit = 50 } = filters || {};
+    const { type, status, isActive, page = 1, limit = 50 } = filters || {};
 
     const where: any = {
       organizationId,
       ...(type && { type }),
       ...(status && { status: status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE' }),
+      ...(isActive !== undefined && { isActive }),
     };
 
     const [taxRates, total] = await Promise.all([
@@ -70,12 +92,21 @@ export class TaxService {
         orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
+        include: {
+          _count: {
+            select: { items: true },
+          },
+        },
       }),
       this.prisma.taxRate.count({ where }),
     ]);
 
     return {
-      data: taxRates,
+      data: taxRates.map((rate) => ({
+        ...rate,
+        rate: Number(rate.rate),
+        itemCount: rate._count.items,
+      })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -83,19 +114,30 @@ export class TaxService {
   async getTaxRate(id: string, organizationId: string) {
     const taxRate = await this.prisma.taxRate.findFirst({
       where: { id, organizationId },
+      include: {
+        _count: {
+          select: { items: true },
+        },
+      },
     });
 
     if (!taxRate) {
       throw new NotFoundException('Tax rate not found');
     }
 
-    return taxRate;
+    return {
+      ...taxRate,
+      rate: Number(taxRate.rate),
+      itemCount: taxRate._count.items,
+    };
   }
 
   async getDefaultTaxRate(organizationId: string) {
-    return this.prisma.taxRate.findFirst({
-      where: { organizationId, isDefault: true, status: 'ACTIVE' },
+    const taxRate = await this.prisma.taxRate.findFirst({
+      where: { organizationId, isDefault: true, isActive: true, status: 'ACTIVE' },
     });
+
+    return taxRate ? { ...taxRate, rate: Number(taxRate.rate) } : null;
   }
 
   async updateTaxRate(id: string, organizationId: string, dto: UpdateTaxRateDto) {
@@ -105,6 +147,17 @@ export class TaxService {
 
     if (!existing) {
       throw new NotFoundException('Tax rate not found');
+    }
+
+    // Check for duplicate code if changing
+    if (dto.code && dto.code !== existing.code) {
+      const existingCode = await this.prisma.taxRate.findFirst({
+        where: { organizationId, code: dto.code, id: { not: id } },
+      });
+
+      if (existingCode) {
+        throw new ConflictException(`Tax rate with code "${dto.code}" already exists`);
+      }
     }
 
     // If setting as default, unset other defaults
@@ -118,9 +171,37 @@ export class TaxService {
     return this.prisma.taxRate.update({
       where: { id },
       data: {
-        ...dto,
-        status: dto.status === false ? 'INACTIVE' : dto.status === true ? 'ACTIVE' : undefined,
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.code !== undefined && { code: dto.code }),
+        ...(dto.rate !== undefined && { rate: dto.rate }),
+        ...(dto.type !== undefined && { type: dto.type }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.effectiveFrom !== undefined && { effectiveFrom: dto.effectiveFrom ? new Date(dto.effectiveFrom) : null }),
+        ...(dto.effectiveTo !== undefined && { effectiveTo: dto.effectiveTo ? new Date(dto.effectiveTo) : null }),
       },
+    });
+  }
+
+  async setDefaultTaxRate(id: string, organizationId: string) {
+    const taxRate = await this.prisma.taxRate.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!taxRate) {
+      throw new NotFoundException('Tax rate not found');
+    }
+
+    // Unset all defaults, then set this one
+    await this.prisma.taxRate.updateMany({
+      where: { organizationId, isDefault: true },
+      data: { isDefault: false },
+    });
+
+    return this.prisma.taxRate.update({
+      where: { id },
+      data: { isDefault: true },
     });
   }
 
@@ -149,6 +230,97 @@ export class TaxService {
     });
   }
 
+  // ============ Organization Tax Settings ============
+
+  async getOrganizationTaxSettings(organizationId: string) {
+    let settings = await this.prisma.organizationTaxSettings.findUnique({
+      where: { organizationId },
+    });
+
+    // Create default settings if not exists
+    if (!settings) {
+      settings = await this.prisma.organizationTaxSettings.create({
+        data: { organizationId },
+      });
+    }
+
+    // Fetch default tax rates if set
+    const [defaultSalesTax, defaultPurchaseTax] = await Promise.all([
+      settings.defaultSalesTaxId
+        ? this.prisma.taxRate.findUnique({ where: { id: settings.defaultSalesTaxId } })
+        : null,
+      settings.defaultPurchaseTaxId
+        ? this.prisma.taxRate.findUnique({ where: { id: settings.defaultPurchaseTaxId } })
+        : null,
+    ]);
+
+    return {
+      ...settings,
+      sstThreshold: settings.sstThreshold ? Number(settings.sstThreshold) : null,
+      defaultSalesTax: defaultSalesTax
+        ? {
+            id: defaultSalesTax.id,
+            name: defaultSalesTax.name,
+            code: defaultSalesTax.code,
+            rate: Number(defaultSalesTax.rate),
+          }
+        : null,
+      defaultPurchaseTax: defaultPurchaseTax
+        ? {
+            id: defaultPurchaseTax.id,
+            name: defaultPurchaseTax.name,
+            code: defaultPurchaseTax.code,
+            rate: Number(defaultPurchaseTax.rate),
+          }
+        : null,
+    };
+  }
+
+  async updateOrganizationTaxSettings(
+    organizationId: string,
+    dto: UpdateOrganizationTaxSettingsDto
+  ) {
+    // Validate tax rate IDs if provided
+    if (dto.defaultSalesTaxId) {
+      const exists = await this.prisma.taxRate.findFirst({
+        where: { id: dto.defaultSalesTaxId, organizationId },
+      });
+      if (!exists) {
+        throw new NotFoundException('Default sales tax rate not found');
+      }
+    }
+
+    if (dto.defaultPurchaseTaxId) {
+      const exists = await this.prisma.taxRate.findFirst({
+        where: { id: dto.defaultPurchaseTaxId, organizationId },
+      });
+      if (!exists) {
+        throw new NotFoundException('Default purchase tax rate not found');
+      }
+    }
+
+    return this.prisma.organizationTaxSettings.upsert({
+      where: { organizationId },
+      create: {
+        organizationId,
+        ...dto,
+        sstRegisteredDate: dto.sstRegisteredDate ? new Date(dto.sstRegisteredDate) : null,
+      },
+      update: {
+        ...(dto.isSstRegistered !== undefined && { isSstRegistered: dto.isSstRegistered }),
+        ...(dto.sstRegistrationNo !== undefined && { sstRegistrationNo: dto.sstRegistrationNo }),
+        ...(dto.sstRegisteredDate !== undefined && {
+          sstRegisteredDate: dto.sstRegisteredDate ? new Date(dto.sstRegisteredDate) : null,
+        }),
+        ...(dto.sstThreshold !== undefined && { sstThreshold: dto.sstThreshold }),
+        ...(dto.defaultSalesTaxId !== undefined && { defaultSalesTaxId: dto.defaultSalesTaxId }),
+        ...(dto.defaultPurchaseTaxId !== undefined && { defaultPurchaseTaxId: dto.defaultPurchaseTaxId }),
+        ...(dto.taxInclusive !== undefined && { taxInclusive: dto.taxInclusive }),
+        ...(dto.roundingMethod !== undefined && { roundingMethod: dto.roundingMethod }),
+      },
+    });
+  }
+
   // ============ Tax Calculation ============
 
   async calculateTax(
@@ -160,6 +332,7 @@ export class TaxService {
     const taxBreakdownMap = new Map<string, {
       taxRateId: string;
       taxRateName: string;
+      taxRateCode: string;
       rate: number;
       taxableAmount: number;
       taxAmount: number;
@@ -170,7 +343,7 @@ export class TaxService {
 
       if (item.taxRateId) {
         const taxRate = await this.prisma.taxRate.findFirst({
-          where: { id: item.taxRateId, organizationId, status: 'ACTIVE' },
+          where: { id: item.taxRateId, organizationId, isActive: true, status: 'ACTIVE' },
         });
 
         if (taxRate) {
@@ -186,6 +359,7 @@ export class TaxService {
             taxBreakdownMap.set(item.taxRateId, {
               taxRateId: taxRate.id,
               taxRateName: taxRate.name,
+              taxRateCode: taxRate.code,
               rate: Number(taxRate.rate),
               taxableAmount: item.amount,
               taxAmount,
@@ -207,17 +381,17 @@ export class TaxService {
     organizationId: string,
     amount: number,
     taxRateId?: string
-  ): Promise<{ taxAmount: number; taxRate: number; taxRateName: string }> {
+  ): Promise<{ taxAmount: number; taxRate: number; taxRateName: string; taxRateCode: string }> {
     if (!taxRateId) {
-      return { taxAmount: 0, taxRate: 0, taxRateName: 'No Tax' };
+      return { taxAmount: 0, taxRate: 0, taxRateName: 'No Tax', taxRateCode: '' };
     }
 
     const taxRate = await this.prisma.taxRate.findFirst({
-      where: { id: taxRateId, organizationId, status: 'ACTIVE' },
+      where: { id: taxRateId, organizationId, isActive: true, status: 'ACTIVE' },
     });
 
     if (!taxRate) {
-      return { taxAmount: 0, taxRate: 0, taxRateName: 'Unknown' };
+      return { taxAmount: 0, taxRate: 0, taxRateName: 'Unknown', taxRateCode: '' };
     }
 
     const taxAmount = Math.round((amount * Number(taxRate.rate)) / 100 * 100) / 100;
@@ -226,6 +400,7 @@ export class TaxService {
       taxAmount,
       taxRate: Number(taxRate.rate),
       taxRateName: taxRate.name,
+      taxRateCode: taxRate.code,
     };
   }
 
@@ -237,7 +412,7 @@ export class TaxService {
     });
 
     if (existingRates > 0) {
-      return { message: 'Tax rates already exist', created: 0 };
+      return { message: 'Tax rates already exist', created: 0, rates: [] };
     }
 
     const rates = [
@@ -245,16 +420,26 @@ export class TaxService {
       { ...MALAYSIAN_TAX_RATES.SST_SERVICE },
       { ...MALAYSIAN_TAX_RATES.EXEMPT },
       { ...MALAYSIAN_TAX_RATES.ZERO_RATED },
+      { ...MALAYSIAN_TAX_RATES.OUT_OF_SCOPE },
     ];
 
-    const created = await this.prisma.taxRate.createMany({
-      data: rates.map((rate) => ({
-        ...rate,
-        organizationId,
-      })),
-    });
+    const createdRates = await Promise.all(
+      rates.map((rate) =>
+        this.prisma.taxRate.create({
+          data: {
+            ...rate,
+            organizationId,
+            isActive: true,
+          },
+        })
+      )
+    );
 
-    return { message: 'Default Malaysian tax rates created', created: created.count };
+    return {
+      message: 'Default Malaysian tax rates created',
+      created: createdRates.length,
+      rates: createdRates,
+    };
   }
 
   // ============ SST Report Data ============

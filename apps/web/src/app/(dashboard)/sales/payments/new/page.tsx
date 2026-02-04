@@ -22,7 +22,7 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useCreatePayment, useInvoices } from '@/hooks/use-sales';
 import { CustomerSelect } from '@/components/sales';
-import { CreatePaymentDto, Invoice } from '@/lib/sales';
+import { CreatePaymentDto } from '@/lib/sales';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;

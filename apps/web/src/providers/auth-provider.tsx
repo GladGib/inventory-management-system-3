@@ -15,7 +15,7 @@ const publicPaths = ['/login', '/register', '/forgot-password'];
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isLoading, setUser, setLoading } = useAuthStore();
+  const { user, isLoading, setUser } = useAuthStore();
 
   useEffect(() => {
     const checkAuth = async () => {

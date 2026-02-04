@@ -1,0 +1,36 @@
+<div class="document-header">
+  <div class="company-info">
+    {{#ifExists organization.logoUrl}}
+    <img src="{{organization.logoUrl}}" alt="{{organization.name}}" class="company-logo" />
+    {{/ifExists}}
+    <div class="company-name">{{organization.name}}</div>
+    <div class="company-details">
+      {{#ifExists organization.address}}
+      <p>
+        {{#ifExists organization.address.line1}}{{organization.address.line1}}<br>{{/ifExists}}
+        {{#ifExists organization.address.line2}}{{organization.address.line2}}<br>{{/ifExists}}
+        {{#ifExists organization.address.city}}{{organization.address.city}}, {{/ifExists}}
+        {{#ifExists organization.address.state}}{{organization.address.state}} {{/ifExists}}
+        {{#ifExists organization.address.postcode}}{{organization.address.postcode}}{{/ifExists}}
+        {{#ifExists organization.address.country}}<br>{{organization.address.country}}{{/ifExists}}
+      </p>
+      {{/ifExists}}
+      {{#ifExists organization.phone}}<p>Tel: {{organization.phone}}</p>{{/ifExists}}
+      {{#ifExists organization.email}}<p>Email: {{organization.email}}</p>{{/ifExists}}
+      {{#ifExists organization.website}}<p>Web: {{organization.website}}</p>{{/ifExists}}
+    </div>
+    <div class="registration-info">
+      {{#ifExists organization.businessRegNo}}<span>Reg No: {{organization.businessRegNo}}</span>{{/ifExists}}
+      {{#ifExists organization.sstNumber}}<span>SST No: {{organization.sstNumber}}</span>{{/ifExists}}
+      {{#ifExists organization.tin}}<span>TIN: {{organization.tin}}</span>{{/ifExists}}
+    </div>
+  </div>
+  <div class="document-title-section">
+    <div class="document-title">{{documentTitle}}</div>
+    <div class="document-number">{{documentNumber}}</div>
+    <div class="document-date">{{documentDateLabel}}: {{formatDate documentDate}}</div>
+    {{#ifExists status}}
+    <div class="document-status status-{{lowercase status}}">{{status}}</div>
+    {{/ifExists}}
+  </div>
+</div>

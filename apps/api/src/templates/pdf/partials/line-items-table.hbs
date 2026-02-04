@@ -1,0 +1,47 @@
+<div class="items-section">
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width: 30px;" class="text-center">#</th>
+        <th style="width: 80px;">SKU</th>
+        <th>Item Description</th>
+        <th style="width: 60px;" class="text-right">Qty</th>
+        <th style="width: 50px;" class="text-center">Unit</th>
+        <th style="width: 80px;" class="text-right">Unit Price</th>
+        {{#ifExists showDiscount}}
+        <th style="width: 60px;" class="text-right">Disc %</th>
+        {{/ifExists}}
+        <th style="width: 70px;" class="text-right">Tax</th>
+        <th style="width: 90px;" class="text-right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+      <tr>
+        <td class="text-center item-row-number">{{inc @index}}</td>
+        <td>
+          {{#ifExists this.sku}}
+          <div class="item-sku">{{this.sku}}</div>
+          {{/ifExists}}
+        </td>
+        <td>
+          <div class="item-name">{{this.name}}</div>
+          {{#ifExists this.description}}
+          <div class="item-description">{{this.description}}</div>
+          {{/ifExists}}
+        </td>
+        <td class="text-right">{{formatNumber this.quantity 2}}</td>
+        <td class="text-center">{{this.unit}}</td>
+        <td class="text-right">{{formatCurrency this.unitPrice}}</td>
+        {{#ifExists ../showDiscount}}
+        <td class="text-right">
+          {{#if this.discountPercent}}{{formatNumber this.discountPercent 2}}%{{else}}-{{/if}}
+        </td>
+        {{/ifExists}}
+        <td class="text-right">{{formatCurrency this.taxAmount}}</td>
+        <td class="text-right"><strong>{{formatCurrency this.amount}}</strong></td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>

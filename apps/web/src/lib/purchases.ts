@@ -253,6 +253,75 @@ export interface CreateReceiveDto {
   notes?: string;
 }
 
+// ============ Vendor Credits Types ============
+
+export type VendorCreditStatus = 'OPEN' | 'PARTIALLY_APPLIED' | 'FULLY_APPLIED' | 'VOID';
+
+export interface VendorCreditItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxAmount: number;
+  total: number;
+}
+
+export interface VendorCreditApplication {
+  id: string;
+  billId: string;
+  bill: { billNumber: string; total: number };
+  amount: number;
+  appliedDate: string;
+}
+
+export interface VendorCredit {
+  id: string;
+  creditNumber: string;
+  vendorId: string;
+  vendor: Vendor;
+  creditDate: string;
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+  balance: number;
+  status: VendorCreditStatus;
+  notes?: string;
+  items: VendorCreditItem[];
+  applications: VendorCreditApplication[];
+  _count?: { applications: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorCreditQueryParams {
+  status?: VendorCreditStatus;
+  vendorId?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface VendorCreditItemDto {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxAmount?: number;
+}
+
+export interface CreateVendorCreditDto {
+  vendorId: string;
+  creditDate?: Date;
+  items: VendorCreditItemDto[];
+  notes?: string;
+}
+
+export interface UpdateVendorCreditDto extends Partial<CreateVendorCreditDto> {}
+
+export interface ApplyVendorCreditDto {
+  applications: { billId: string; amount: number }[];
+}
+
 // ============ Service ============
 
 export const purchasesService = {
@@ -358,6 +427,52 @@ export const purchasesService = {
 
   async getVendorOpenBills(vendorId: string): Promise<Bill[]> {
     const response = await api.get<Bill[]>(`/purchases/bills/vendor/${vendorId}/open`);
+    return response.data;
+  },
+
+  // Vendor Credits
+  async getVendorCredits(
+    params?: VendorCreditQueryParams
+  ): Promise<PaginatedResponse<VendorCredit>> {
+    const response = await api.get<PaginatedResponse<VendorCredit>>('/purchases/credits', {
+      params,
+    });
+    return response.data;
+  },
+
+  async getVendorCredit(id: string): Promise<VendorCredit> {
+    const response = await api.get<VendorCredit>(`/purchases/credits/${id}`);
+    return response.data;
+  },
+
+  async createVendorCredit(data: CreateVendorCreditDto): Promise<VendorCredit> {
+    const response = await api.post<VendorCredit>('/purchases/credits', data);
+    return response.data;
+  },
+
+  async updateVendorCredit(id: string, data: UpdateVendorCreditDto): Promise<VendorCredit> {
+    const response = await api.put<VendorCredit>(`/purchases/credits/${id}`, data);
+    return response.data;
+  },
+
+  async deleteVendorCredit(id: string): Promise<void> {
+    await api.delete(`/purchases/credits/${id}`);
+  },
+
+  async voidVendorCredit(id: string): Promise<VendorCredit> {
+    const response = await api.put<VendorCredit>(`/purchases/credits/${id}/void`);
+    return response.data;
+  },
+
+  async applyVendorCredit(id: string, data: ApplyVendorCreditDto): Promise<VendorCredit> {
+    const response = await api.post<VendorCredit>(`/purchases/credits/${id}/apply`, data);
+    return response.data;
+  },
+
+  async getVendorCreditApplicationHistory(id: string): Promise<VendorCreditApplication[]> {
+    const response = await api.get<VendorCreditApplication[]>(
+      `/purchases/credits/${id}/applications`
+    );
     return response.data;
   },
 };

@@ -24,9 +24,15 @@ import { PurchasesModule } from './modules/purchases/purchases.module';
 import { TaxModule } from './modules/tax/tax.module';
 import { EInvoiceModule } from './modules/einvoice/einvoice.module';
 
+// Settings Modules
+import { PaymentTermsModule } from './modules/settings/payment-terms/payment-terms.module';
+
 // Phase 5: Reports & Dashboard
 import { ReportsModule } from './modules/reports/reports.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+
+// Phase 6: Email Notifications
+import { EmailModule } from './modules/email/email.module';
 
 // App Controller for health check
 import { AppController } from './app.controller';
@@ -78,6 +84,12 @@ import { AppService } from './app.service';
     // Phase 5: Reports & Dashboard
     ReportsModule,
     DashboardModule,
+
+    // Settings Modules
+    PaymentTermsModule,
+
+    // Phase 6: Email Notifications
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [

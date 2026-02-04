@@ -19,6 +19,7 @@ import {
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useCreateItem } from '@/hooks/use-items';
 import { CreateItemDto } from '@/lib/items';
+import { TaxRateSelect } from '@/components/tax';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -202,10 +203,19 @@ export default function NewItemPage() {
                 </Col>
               </Row>
 
-              <Row gutter={16}>
+              <Row gutter={16} align="middle">
                 <Col span={8}>
                   <Form.Item name="taxable" label="Taxable" valuePropName="checked">
                     <Switch checkedChildren="Yes" unCheckedChildren="No" />
+                  </Form.Item>
+                </Col>
+                <Col span={16}>
+                  <Form.Item
+                    name="taxRateId"
+                    label="Tax Rate"
+                    extra="Default tax rate for this item"
+                  >
+                    <TaxRateSelect placeholder="Select tax rate (optional)" />
                   </Form.Item>
                 </Col>
               </Row>

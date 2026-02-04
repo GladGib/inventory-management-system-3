@@ -1,0 +1,570 @@
+/* PDF Document Styles - Malaysian IMS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #333;
+  background: #fff;
+}
+
+/* Document Container */
+.document {
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Header Section */
+.document-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #1890ff;
+}
+
+.company-info {
+  flex: 1;
+}
+
+.company-logo {
+  max-width: 150px;
+  max-height: 60px;
+  margin-bottom: 10px;
+}
+
+.company-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1890ff;
+  margin-bottom: 5px;
+}
+
+.company-details {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.company-details p {
+  margin: 2px 0;
+}
+
+.registration-info {
+  font-size: 9px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+}
+
+.registration-info span {
+  display: block;
+  margin: 2px 0;
+}
+
+/* Document Title */
+.document-title-section {
+  text-align: right;
+  min-width: 180px;
+}
+
+.document-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.document-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 5px;
+}
+
+.document-date {
+  font-size: 11px;
+  color: #666;
+}
+
+.document-status {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-draft {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.status-confirmed,
+.status-issued {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.status-shipped,
+.status-sent {
+  background-color: #fff7e6;
+  color: #fa8c16;
+}
+
+.status-paid,
+.status-delivered,
+.status-received {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.status-cancelled,
+.status-void {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+}
+
+.status-overdue {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+}
+
+/* Paid Watermark */
+.paid-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 100px;
+  font-weight: bold;
+  color: rgba(82, 196, 26, 0.15);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  margin-bottom: 25px;
+}
+
+/* Address Block */
+.address-block {
+  padding: 15px;
+  background-color: #fafafa;
+  border-radius: 6px;
+  border-left: 4px solid #1890ff;
+}
+
+.address-block-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.address-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.address-company {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.address-lines {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.contact-info {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #666;
+}
+
+.contact-info p {
+  margin: 2px 0;
+}
+
+.tax-number {
+  margin-top: 5px;
+  font-size: 10px;
+  color: #1890ff;
+}
+
+/* Document Info Box */
+.document-info-box {
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-size: 10px;
+  color: #666;
+}
+
+.info-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Line Items Table */
+.items-section {
+  margin-bottom: 25px;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.items-table thead {
+  background-color: #1890ff;
+  color: white;
+}
+
+.items-table th {
+  padding: 10px 8px;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+
+.items-table th.text-right {
+  text-align: right;
+}
+
+.items-table th.text-center {
+  text-align: center;
+}
+
+.items-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+
+.items-table tbody tr:hover {
+  background-color: #fafafa;
+}
+
+.items-table td {
+  padding: 10px 8px;
+  vertical-align: top;
+}
+
+.items-table td.text-right {
+  text-align: right;
+}
+
+.items-table td.text-center {
+  text-align: center;
+}
+
+.item-sku {
+  font-weight: 600;
+  color: #1890ff;
+  font-size: 9px;
+}
+
+.item-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.item-description {
+  font-size: 9px;
+  color: #666;
+  margin-top: 3px;
+}
+
+.item-row-number {
+  color: #999;
+  font-weight: 500;
+}
+
+/* Totals Section */
+.totals-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 25px;
+}
+
+.totals-box {
+  min-width: 280px;
+  background-color: #fafafa;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.totals-row:last-child {
+  border-bottom: none;
+}
+
+.totals-row.discount {
+  color: #52c41a;
+}
+
+.totals-row.total {
+  background-color: #1890ff;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.totals-row.balance {
+  background-color: #f5222d;
+  color: white;
+  font-weight: 600;
+}
+
+.totals-row.balance.paid {
+  background-color: #52c41a;
+}
+
+.totals-label {
+  font-size: 11px;
+}
+
+.totals-value {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Notes and Terms */
+.notes-section {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.notes-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.notes-content {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.terms-section {
+  margin-top: 20px;
+}
+
+.terms-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.terms-content {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Bank Details */
+.bank-details {
+  margin-top: 25px;
+  padding: 15px;
+  background-color: #f6ffed;
+  border-radius: 6px;
+  border-left: 4px solid #52c41a;
+}
+
+.bank-details-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.bank-details-content {
+  font-size: 10px;
+  color: #666;
+}
+
+.bank-details-content p {
+  margin: 5px 0;
+}
+
+.bank-details-content strong {
+  color: #333;
+}
+
+/* Signature Section */
+.signature-section {
+  margin-top: 40px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.signature-box {
+  width: 200px;
+  text-align: center;
+}
+
+.signature-line {
+  border-top: 1px solid #333;
+  margin-bottom: 5px;
+  margin-top: 50px;
+}
+
+.signature-label {
+  font-size: 10px;
+  color: #666;
+}
+
+/* QR Code */
+.qr-code-section {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.qr-code-image {
+  width: 100px;
+  height: 100px;
+}
+
+.qr-code-label {
+  font-size: 9px;
+  color: #666;
+  margin-top: 5px;
+}
+
+/* Footer */
+.document-footer {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+  text-align: center;
+  font-size: 9px;
+  color: #999;
+}
+
+.document-footer p {
+  margin: 3px 0;
+}
+
+/* Payment Status Badge */
+.payment-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.payment-badge.unpaid {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+}
+
+.payment-badge.partial {
+  background-color: #fff7e6;
+  color: #fa8c16;
+}
+
+.payment-badge.paid {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+/* Delivery Instructions */
+.delivery-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #fff7e6;
+  border-radius: 6px;
+  border-left: 4px solid #fa8c16;
+}
+
+.delivery-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.delivery-content {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* Page Break */
+.page-break {
+  page-break-after: always;
+}
+
+/* Print Optimizations */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .items-table thead {
+    background-color: #1890ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .totals-row.total {
+    background-color: #1890ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

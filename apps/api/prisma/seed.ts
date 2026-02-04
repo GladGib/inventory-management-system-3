@@ -48,15 +48,16 @@ async function main() {
 
   // Create default tax rates
   const taxRates = [
-    { name: 'SST 10%', rate: 10, type: TaxType.SST, description: 'Standard Sales and Service Tax', isDefault: true },
-    { name: 'Service Tax 6%', rate: 6, type: TaxType.SERVICE_TAX, description: 'Service Tax', isDefault: false },
-    { name: 'Zero Rated', rate: 0, type: TaxType.ZERO_RATED, description: 'Zero rated supplies', isDefault: false },
-    { name: 'Exempt', rate: 0, type: TaxType.EXEMPT, description: 'Tax exempt supplies', isDefault: false },
+    { name: 'Sales Tax 10%', code: 'ST10', rate: 10, type: TaxType.SST, description: 'Standard Sales Tax', isDefault: true, isActive: true },
+    { name: 'Service Tax 6%', code: 'ST6', rate: 6, type: TaxType.SERVICE_TAX, description: 'Service Tax', isDefault: false, isActive: true },
+    { name: 'Zero Rated', code: 'ZR', rate: 0, type: TaxType.ZERO_RATED, description: 'Zero rated supplies', isDefault: false, isActive: true },
+    { name: 'Tax Exempt', code: 'EX', rate: 0, type: TaxType.EXEMPT, description: 'Tax exempt supplies', isDefault: false, isActive: true },
+    { name: 'Out of Scope', code: 'OS', rate: 0, type: 'OUT_OF_SCOPE' as TaxType, description: 'Outside SST scope', isDefault: false, isActive: true },
   ];
 
   for (const tax of taxRates) {
     const existing = await prisma.taxRate.findFirst({
-      where: { organizationId: organization.id, name: tax.name },
+      where: { organizationId: organization.id, code: tax.code },
     });
     if (!existing) {
       await prisma.taxRate.create({
@@ -65,6 +66,28 @@ async function main() {
     }
   }
   console.log('Tax rates created');
+
+  // Create organization tax settings
+  const existingSettings = await prisma.organizationTaxSettings.findUnique({
+    where: { organizationId: organization.id },
+  });
+
+  if (!existingSettings) {
+    const defaultSalesTax = await prisma.taxRate.findFirst({
+      where: { organizationId: organization.id, code: 'ST10' },
+    });
+
+    await prisma.organizationTaxSettings.create({
+      data: {
+        organizationId: organization.id,
+        isSstRegistered: false,
+        taxInclusive: false,
+        roundingMethod: 'NORMAL',
+        defaultSalesTaxId: defaultSalesTax?.id,
+      },
+    });
+  }
+  console.log('Organization tax settings created');
 
   // Create default payment terms
   const paymentTerms = [

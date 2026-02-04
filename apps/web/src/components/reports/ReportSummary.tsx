@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Col, Row, Statistic, StatisticProps } from 'antd';
+import { Card, Col, Row, Statistic } from 'antd';
 import { ReactNode } from 'react';
 
 export interface SummaryItem {

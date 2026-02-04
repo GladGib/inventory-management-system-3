@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import {
   Card,
   Table,
@@ -13,13 +11,7 @@ import {
   type MenuProps,
   type TableColumnsType,
 } from 'antd';
-import {
-  PlusOutlined,
-  MoreOutlined,
-  EyeOutlined,
-  EditOutlined,
-  HomeOutlined,
-} from '@ant-design/icons';
+import { PlusOutlined, MoreOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { useWarehouses } from '@/hooks/use-inventory';
 import { Warehouse } from '@/lib/inventory';
 
@@ -28,7 +20,7 @@ const { Title } = Typography;
 export default function WarehousesPage() {
   const { data: warehouses, isLoading } = useWarehouses();
 
-  const getActionMenuItems = (record: Warehouse): MenuProps['items'] => [
+  const getActionMenuItems = (_record: Warehouse): MenuProps['items'] => [
     {
       key: 'view',
       icon: <EyeOutlined />,

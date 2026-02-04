@@ -11,8 +11,6 @@ import {
   TeamOutlined,
   BarChartOutlined,
   SettingOutlined,
-  FileTextOutlined,
-  BankOutlined,
   SwapOutlined,
 } from '@ant-design/icons';
 
@@ -64,7 +62,10 @@ const menuItems: MenuItem[] = [
     getItem('Vendors', '/contacts/vendors'),
   ]),
   getItem('Reports', '/reports', <BarChartOutlined />),
-  getItem('Settings', '/settings', <SettingOutlined />),
+  getItem('Settings', '/settings', <SettingOutlined />, [
+    getItem('Organization', '/settings'),
+    getItem('Tax Rates', '/settings/tax-rates'),
+  ]),
 ];
 
 interface SidebarProps {

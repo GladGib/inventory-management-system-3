@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .header .checkmark {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .content {
+      padding: 30px;
+    }
+    .receipt-details {
+      background: #f6ffed;
+      padding: 20px;
+      border-radius: 6px;
+      margin: 20px 0;
+      border: 1px solid #b7eb8f;
+    }
+    .receipt-details p {
+      margin: 8px 0;
+    }
+    .amount {
+      font-size: 32px;
+      font-weight: bold;
+      color: #52c41a;
+      margin: 15px 0;
+      text-align: center;
+    }
+    .footer {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-top: 1px solid #e8e8e8;
+      color: #666;
+      font-size: 13px;
+    }
+    .label {
+      font-weight: 600;
+      color: #666;
+      display: inline-block;
+      width: 140px;
+    }
+    .signature {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e8e8e8;
+    }
+    .allocations {
+      margin-top: 20px;
+    }
+    .allocations table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .allocations th {
+      background: #fafafa;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 2px solid #e8e8e8;
+    }
+    .allocations td {
+      padding: 10px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="checkmark">&#10003;</div>
+      <h1>Payment Received</h1>
+    </div>
+
+    <div class="content">
+      <p>Dear {{customer.displayName}},</p>
+
+      <p>Thank you for your payment. We have successfully received your payment.</p>
+
+      <div class="receipt-details">
+        <p><span class="label">Payment Number:</span> {{payment.paymentNumber}}</p>
+        <p><span class="label">Payment Date:</span> {{formatDate payment.paymentDate}}</p>
+        <p><span class="label">Payment Method:</span> {{payment.paymentMethod}}</p>
+        {{#if payment.referenceNumber}}
+        <p><span class="label">Reference:</span> {{payment.referenceNumber}}</p>
+        {{/if}}
+        <p class="amount">{{formatCurrency payment.amount}}</p>
+      </div>
+
+      {{#if allocations}}
+      <div class="allocations">
+        <p><strong>Payment Applied To:</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th style="text-align: right;">Amount Applied</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each allocations}}
+            <tr>
+              <td>{{this.invoice.invoiceNumber}}</td>
+              <td style="text-align: right;">{{formatCurrency this.amount}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{/if}}
+
+      <p style="margin-top: 20px;">Thank you for your business!</p>
+
+      {{#if signature}}
+      <div class="signature">
+        {{{signature}}}
+      </div>
+      {{/if}}
+    </div>
+
+    <div class="footer">
+      <p><strong>{{organization.name}}</strong></p>
+      {{#if organization.phone}}<p>Phone: {{organization.phone}}</p>{{/if}}
+      {{#if organization.email}}<p>Email: {{organization.email}}</p>{{/if}}
+      <p style="margin-top: 15px; font-size: 11px; color: #999;">
+        This is an automated payment receipt from IMS - Inventory Management System
+      </p>
+    </div>
+  </div>
+</body>
+</html>

@@ -204,6 +204,142 @@ export interface CreatePaymentDto {
   }[];
 }
 
+// ============ Sales Returns Types ============
+
+export type ReturnStatus = 'PENDING' | 'APPROVED' | 'RECEIVED' | 'PROCESSED' | 'REJECTED';
+export type ReturnReason =
+  | 'DEFECTIVE'
+  | 'WRONG_ITEM'
+  | 'CHANGED_MIND'
+  | 'NOT_AS_DESCRIBED'
+  | 'QUALITY_ISSUE'
+  | 'DUPLICATE_ORDER'
+  | 'OTHER';
+export type ItemCondition = 'GOOD' | 'DAMAGED' | 'DEFECTIVE';
+export type CreditNoteStatus = 'OPEN' | 'PARTIALLY_APPLIED' | 'FULLY_APPLIED' | 'VOID';
+
+export interface SalesReturnItem {
+  id: string;
+  itemId: string;
+  item: {
+    id: string;
+    sku: string;
+    name: string;
+    unit?: string;
+  };
+  quantity: number;
+  unitPrice: number;
+  taxAmount: number;
+  total: number;
+  condition: ItemCondition;
+  restocked: boolean;
+}
+
+export interface SalesReturn {
+  id: string;
+  returnNumber: string;
+  customerId: string;
+  customer: Customer;
+  invoiceId?: string;
+  invoice?: { id: string; invoiceNumber: string };
+  salesOrderId?: string;
+  salesOrder?: { id: string; orderNumber: string };
+  returnDate: string;
+  status: ReturnStatus;
+  reason: ReturnReason;
+  notes?: string;
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+  warehouseId?: string;
+  warehouse?: { id: string; name: string };
+  restockItems: boolean;
+  creditNoteId?: string;
+  creditNote?: { id: string; creditNumber: string; total: number };
+  items: SalesReturnItem[];
+  _count?: { items: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreditNoteItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxAmount: number;
+  total: number;
+}
+
+export interface CreditNoteApplication {
+  id: string;
+  invoiceId: string;
+  invoice: { invoiceNumber: string; total: number };
+  amount: number;
+  appliedDate: string;
+}
+
+export interface CreditNote {
+  id: string;
+  creditNumber: string;
+  customerId: string;
+  customer: Customer;
+  creditDate: string;
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+  balance: number;
+  status: CreditNoteStatus;
+  notes?: string;
+  items: CreditNoteItem[];
+  applications: CreditNoteApplication[];
+  _count?: { applications: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SalesReturnQueryParams {
+  status?: ReturnStatus;
+  customerId?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreditNoteQueryParams {
+  status?: CreditNoteStatus;
+  customerId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface SalesReturnItemDto {
+  itemId: string;
+  quantity: number;
+  unitPrice: number;
+  taxAmount?: number;
+  condition?: ItemCondition;
+}
+
+export interface CreateSalesReturnDto {
+  customerId: string;
+  invoiceId?: string;
+  salesOrderId?: string;
+  returnDate?: Date;
+  reason: ReturnReason;
+  notes?: string;
+  warehouseId?: string;
+  restockItems?: boolean;
+  items: SalesReturnItemDto[];
+}
+
+export interface UpdateSalesReturnDto extends Partial<CreateSalesReturnDto> {}
+
+export interface ApplyCreditNoteDto {
+  applications: { invoiceId: string; amount: number }[];
+}
+
 // ============ Service ============
 
 export const salesService = {
@@ -287,6 +423,65 @@ export const salesService = {
 
   async createPayment(data: CreatePaymentDto): Promise<Payment> {
     const response = await api.post<Payment>('/sales/payments', data);
+    return response.data;
+  },
+
+  // Sales Returns
+  async getSalesReturns(params?: SalesReturnQueryParams): Promise<PaginatedResponse<SalesReturn>> {
+    const response = await api.get<PaginatedResponse<SalesReturn>>('/sales/returns', { params });
+    return response.data;
+  },
+
+  async getSalesReturn(id: string): Promise<SalesReturn> {
+    const response = await api.get<SalesReturn>(`/sales/returns/${id}`);
+    return response.data;
+  },
+
+  async createSalesReturn(data: CreateSalesReturnDto): Promise<SalesReturn> {
+    const response = await api.post<SalesReturn>('/sales/returns', data);
+    return response.data;
+  },
+
+  async updateSalesReturn(id: string, data: UpdateSalesReturnDto): Promise<SalesReturn> {
+    const response = await api.put<SalesReturn>(`/sales/returns/${id}`, data);
+    return response.data;
+  },
+
+  async approveSalesReturn(id: string): Promise<SalesReturn> {
+    const response = await api.put<SalesReturn>(`/sales/returns/${id}/approve`);
+    return response.data;
+  },
+
+  async receiveSalesReturn(id: string): Promise<SalesReturn> {
+    const response = await api.put<SalesReturn>(`/sales/returns/${id}/receive`);
+    return response.data;
+  },
+
+  async processSalesReturn(id: string): Promise<SalesReturn> {
+    const response = await api.put<SalesReturn>(`/sales/returns/${id}/process`);
+    return response.data;
+  },
+
+  async rejectSalesReturn(id: string): Promise<SalesReturn> {
+    const response = await api.put<SalesReturn>(`/sales/returns/${id}/reject`);
+    return response.data;
+  },
+
+  // Credit Notes
+  async getCreditNotes(params?: CreditNoteQueryParams): Promise<PaginatedResponse<CreditNote>> {
+    const response = await api.get<PaginatedResponse<CreditNote>>('/sales/returns/credit-notes', {
+      params,
+    });
+    return response.data;
+  },
+
+  async getCreditNote(id: string): Promise<CreditNote> {
+    const response = await api.get<CreditNote>(`/sales/returns/credit-notes/${id}`);
+    return response.data;
+  },
+
+  async applyCreditNote(id: string, data: ApplyCreditNoteDto): Promise<CreditNote> {
+    const response = await api.post<CreditNote>(`/sales/returns/credit-notes/${id}/apply`, data);
     return response.data;
   },
 };

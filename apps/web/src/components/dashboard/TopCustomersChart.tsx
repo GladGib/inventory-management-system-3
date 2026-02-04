@@ -24,14 +24,19 @@ export function TopCustomersChart({ limit = 10 }: TopCustomersChartProps) {
   const { data, isLoading } = useTopCustomers(limit);
 
   const chartData =
-    data?.map((topCustomer) => {
-      const customerName = topCustomer.customer?.displayName || topCustomer.customer?.companyName || 'Unknown Customer';
-      return {
-        customer: customerName.length > 30 ? customerName.substring(0, 30) + '...' : customerName,
-        value: topCustomer.totalSpent,
-        orders: topCustomer.invoiceCount,
-      };
-    }).filter((item) => item.value > 0) || [];
+    data
+      ?.map((topCustomer) => {
+        const customerName =
+          topCustomer.customer?.displayName ||
+          topCustomer.customer?.companyName ||
+          'Unknown Customer';
+        return {
+          customer: customerName.length > 30 ? customerName.substring(0, 30) + '...' : customerName,
+          value: topCustomer.totalSpent,
+          orders: topCustomer.invoiceCount,
+        };
+      })
+      .filter((item) => item.value > 0) || [];
 
   const config = {
     data: chartData,

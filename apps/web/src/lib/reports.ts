@@ -157,6 +157,58 @@ export interface InventoryValuationResponse {
   };
 }
 
+// Stock Aging Report Types
+export interface StockAgingFilters {
+  warehouseId?: string;
+  categoryId?: string;
+  asOfDate?: string;
+}
+
+export interface StockAgingBucket {
+  label: string;
+  minDays: number;
+  maxDays: number;
+  itemCount: number;
+  quantity: number;
+  value: number;
+  percentOfValue: number;
+}
+
+export interface StockAgingItem {
+  itemId: string;
+  sku: string;
+  itemName: string;
+  category: string;
+  warehouse: string;
+  quantity: number;
+  unitCost: number;
+  totalValue: number;
+  lastReceiveDate: string | null;
+  lastSaleDate: string | null;
+  ageDays: number;
+  ageBucket: string;
+  daysSinceLastSale: number | null;
+  isSlowMoving: boolean;
+  turnoverRate: number;
+}
+
+export interface StockAgingSummary {
+  totalItems: number;
+  totalQuantity: number;
+  totalValue: number;
+  avgAge: number;
+  slowMovingCount: number;
+  slowMovingValue: number;
+}
+
+export interface StockAgingResponse {
+  summary: StockAgingSummary;
+  buckets: StockAgingBucket[];
+  items: StockAgingItem[];
+  asOfDate: string;
+  filters: StockAgingFilters;
+}
+
 // Service
 export const reportsService = {
   // Sales Reports
@@ -181,17 +233,27 @@ export const reportsService = {
 
     // Transform backend response to expected format
     const rawData = response.data.data || [];
-    const totalSales = rawData.reduce((sum: number, item: { totalSales?: number }) => sum + (item.totalSales || 0), 0);
+    const totalSales = rawData.reduce(
+      (sum: number, item: { totalSales?: number }) => sum + (item.totalSales || 0),
+      0
+    );
 
     return {
-      data: rawData.map((item: { customer?: { id: string; displayName?: string; companyName?: string }; orderCount?: number; invoiceCount?: number; totalSales?: number }) => ({
-        customerId: item.customer?.id || '',
-        customerName: item.customer?.displayName || item.customer?.companyName || 'Unknown',
-        orderCount: item.orderCount || 0,
-        invoiceCount: item.invoiceCount || 0,
-        totalSales: item.totalSales || 0,
-        percentOfTotal: totalSales > 0 ? ((item.totalSales || 0) / totalSales) * 100 : 0,
-      })),
+      data: rawData.map(
+        (item: {
+          customer?: { id: string; displayName?: string; companyName?: string };
+          orderCount?: number;
+          invoiceCount?: number;
+          totalSales?: number;
+        }) => ({
+          customerId: item.customer?.id || '',
+          customerName: item.customer?.displayName || item.customer?.companyName || 'Unknown',
+          orderCount: item.orderCount || 0,
+          invoiceCount: item.invoiceCount || 0,
+          totalSales: item.totalSales || 0,
+          percentOfTotal: totalSales > 0 ? ((item.totalSales || 0) / totalSales) * 100 : 0,
+        })
+      ),
       summary: {
         totalCustomers: rawData.length,
         totalSales: totalSales,
@@ -219,18 +281,30 @@ export const reportsService = {
 
     // Transform backend response to expected format
     const rawData = response.data.data || [];
-    const totalSales = rawData.reduce((sum: number, item: { totalSales?: number }) => sum + (item.totalSales || 0), 0);
-    const totalQuantity = rawData.reduce((sum: number, item: { quantitySold?: number }) => sum + (item.quantitySold || 0), 0);
+    const totalSales = rawData.reduce(
+      (sum: number, item: { totalSales?: number }) => sum + (item.totalSales || 0),
+      0
+    );
+    const totalQuantity = rawData.reduce(
+      (sum: number, item: { quantitySold?: number }) => sum + (item.quantitySold || 0),
+      0
+    );
 
     return {
-      data: rawData.map((item: { item?: { id: string; name?: string; sku?: string }; quantitySold?: number; totalSales?: number }) => ({
-        itemId: item.item?.id || '',
-        itemName: item.item?.name || 'Unknown',
-        sku: item.item?.sku || '',
-        quantitySold: item.quantitySold || 0,
-        totalSales: item.totalSales || 0,
-        averagePrice: item.quantitySold ? (item.totalSales || 0) / item.quantitySold : 0,
-      })),
+      data: rawData.map(
+        (item: {
+          item?: { id: string; name?: string; sku?: string };
+          quantitySold?: number;
+          totalSales?: number;
+        }) => ({
+          itemId: item.item?.id || '',
+          itemName: item.item?.name || 'Unknown',
+          sku: item.item?.sku || '',
+          quantitySold: item.quantitySold || 0,
+          totalSales: item.totalSales || 0,
+          averagePrice: item.quantitySold ? (item.totalSales || 0) / item.quantitySold : 0,
+        })
+      ),
       summary: {
         totalItems: rawData.length,
         totalQuantity: totalQuantity,
@@ -269,6 +343,28 @@ export const reportsService = {
   // Purchase Reports
   async getPayablesAging(): Promise<PayablesAgingResponse> {
     const response = await api.get('/reports/purchases/payables-aging');
+    return response.data;
+  },
+
+  // Stock Aging Report
+  async getStockAging(filters?: StockAgingFilters): Promise<StockAgingResponse> {
+    const response = await api.get('/reports/inventory/stock-aging', {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  // Export Reports
+  async exportReport(
+    reportType: string,
+    format: 'xlsx' | 'pdf',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    params?: Record<string, any>
+  ): Promise<Blob> {
+    const response = await api.get(`/reports/${reportType}`, {
+      params: { ...params, format },
+      responseType: 'blob',
+    });
     return response.data;
   },
 };

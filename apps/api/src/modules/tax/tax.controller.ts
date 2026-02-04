@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { TaxService } from './tax.service';
 import { CreateTaxRateDto, UpdateTaxRateDto } from './dto/create-tax-rate.dto';
+import { UpdateOrganizationTaxSettingsDto } from './dto/organization-tax-settings.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -48,18 +50,21 @@ export class TaxController {
   @ApiResponse({ status: 200, description: 'List of tax rates' })
   @ApiQuery({ name: 'type', required: false })
   @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'isActive', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async getTaxRates(
     @CurrentUser('organizationId') organizationId: string,
     @Query('type') type?: string,
     @Query('status') status?: string,
+    @Query('isActive') isActive?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
   ) {
     return this.taxService.getTaxRates(organizationId, {
       type,
       status,
+      isActive: isActive ? isActive === 'true' : undefined,
       page: page ? parseInt(page) : undefined,
       limit: limit ? parseInt(limit) : undefined,
     });
@@ -96,6 +101,17 @@ export class TaxController {
     return this.taxService.updateTaxRate(id, organizationId, dto);
   }
 
+  @Patch('rates/:id/default')
+  @Roles('ADMIN', 'MANAGER')
+  @ApiOperation({ summary: 'Set tax rate as default' })
+  @ApiResponse({ status: 200, description: 'Tax rate set as default' })
+  async setDefaultTaxRate(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.taxService.setDefaultTaxRate(id, organizationId);
+  }
+
   @Delete('rates/:id')
   @Roles('ADMIN')
   @ApiOperation({ summary: 'Delete tax rate' })
@@ -105,6 +121,28 @@ export class TaxController {
     @CurrentUser('organizationId') organizationId: string
   ) {
     return this.taxService.deleteTaxRate(id, organizationId);
+  }
+
+  // ============ Organization Tax Settings ============
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Get organization tax settings' })
+  @ApiResponse({ status: 200, description: 'Organization tax settings' })
+  async getOrganizationTaxSettings(
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.taxService.getOrganizationTaxSettings(organizationId);
+  }
+
+  @Put('settings')
+  @Roles('ADMIN', 'MANAGER')
+  @ApiOperation({ summary: 'Update organization tax settings' })
+  @ApiResponse({ status: 200, description: 'Organization tax settings updated' })
+  async updateOrganizationTaxSettings(
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() dto: UpdateOrganizationTaxSettingsDto
+  ) {
+    return this.taxService.updateOrganizationTaxSettings(organizationId, dto);
   }
 
   // ============ Malaysian SST ============

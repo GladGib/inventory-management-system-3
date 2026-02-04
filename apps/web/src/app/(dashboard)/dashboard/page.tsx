@@ -49,7 +49,11 @@ export default function DashboardPage() {
               value={kpis?.monthSales?.total || 0}
               prefix={<RiseOutlined style={{ color: '#52c41a' }} />}
               formatter={(value) => formatCurrency(Number(value))}
-              suffix={<span style={{ fontSize: 12, color: '#999' }}>({kpis?.monthSales?.count || 0} invoices)</span>}
+              suffix={
+                <span style={{ fontSize: 12, color: '#999' }}>
+                  ({kpis?.monthSales?.count || 0} invoices)
+                </span>
+              }
             />
           </Card>
         </Col>
@@ -94,7 +98,11 @@ export default function DashboardPage() {
               prefix={<RiseOutlined style={{ color: '#52c41a' }} />}
               formatter={(value) => formatCurrency(Number(value))}
               valueStyle={{ color: kpis?.receivables?.total ? '#52c41a' : undefined }}
-              suffix={<span style={{ fontSize: 12, color: '#999' }}>({kpis?.receivables?.count || 0})</span>}
+              suffix={
+                <span style={{ fontSize: 12, color: '#999' }}>
+                  ({kpis?.receivables?.count || 0})
+                </span>
+              }
             />
           </Card>
         </Col>
@@ -106,7 +114,9 @@ export default function DashboardPage() {
               prefix={<FallOutlined style={{ color: '#ff4d4f' }} />}
               formatter={(value) => formatCurrency(Number(value))}
               valueStyle={{ color: kpis?.payables?.total ? '#ff4d4f' : undefined }}
-              suffix={<span style={{ fontSize: 12, color: '#999' }}>({kpis?.payables?.count || 0})</span>}
+              suffix={
+                <span style={{ fontSize: 12, color: '#999' }}>({kpis?.payables?.count || 0})</span>
+              }
             />
           </Card>
         </Col>
@@ -119,7 +129,10 @@ export default function DashboardPage() {
                   value={(kpis?.receivables?.total || 0) - (kpis?.payables?.total || 0)}
                   formatter={(value) => formatCurrency(Number(value))}
                   valueStyle={{
-                    color: (kpis?.receivables?.total || 0) >= (kpis?.payables?.total || 0) ? '#52c41a' : '#ff4d4f',
+                    color:
+                      (kpis?.receivables?.total || 0) >= (kpis?.payables?.total || 0)
+                        ? '#52c41a'
+                        : '#ff4d4f',
                   }}
                 />
               </Col>

@@ -6,16 +6,21 @@ import {
   Bill,
   VendorPayment,
   PurchaseReceive,
+  VendorCredit,
   PurchaseOrderQueryParams,
   BillQueryParams,
   PaymentQueryParams,
   ReceiveQueryParams,
+  VendorCreditQueryParams,
   PaginatedResponse,
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
   CreateBillDto,
   CreateVendorPaymentDto,
   CreateReceiveDto,
+  CreateVendorCreditDto,
+  UpdateVendorCreditDto,
+  ApplyVendorCreditDto,
 } from '@/lib/purchases';
 
 // Query keys
@@ -34,6 +39,10 @@ export const purchaseKeys = {
   payments: () => [...purchaseKeys.all, 'payments'] as const,
   paymentList: (params: PaymentQueryParams) =>
     [...purchaseKeys.payments(), 'list', params] as const,
+  credits: () => [...purchaseKeys.all, 'credits'] as const,
+  creditList: (params: VendorCreditQueryParams) =>
+    [...purchaseKeys.credits(), 'list', params] as const,
+  creditDetail: (id: string) => [...purchaseKeys.credits(), 'detail', id] as const,
 };
 
 // ============ Purchase Orders ============
@@ -276,6 +285,104 @@ export function useCreateVendorPayment() {
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to record payment');
+    },
+  });
+}
+
+// ============ Vendor Credits ============
+
+export function useVendorCredits(params?: VendorCreditQueryParams) {
+  return useQuery<PaginatedResponse<VendorCredit>>({
+    queryKey: purchaseKeys.creditList(params || {}),
+    queryFn: () => purchasesService.getVendorCredits(params),
+  });
+}
+
+export function useVendorCredit(id: string) {
+  return useQuery<VendorCredit>({
+    queryKey: purchaseKeys.creditDetail(id),
+    queryFn: () => purchasesService.getVendorCredit(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateVendorCredit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateVendorCreditDto) => purchasesService.createVendorCredit(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.credits() });
+      message.success('Vendor credit created successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to create vendor credit');
+    },
+  });
+}
+
+export function useUpdateVendorCredit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateVendorCreditDto }) =>
+      purchasesService.updateVendorCredit(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.credits() });
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.creditDetail(id) });
+      message.success('Vendor credit updated successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to update vendor credit');
+    },
+  });
+}
+
+export function useDeleteVendorCredit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => purchasesService.deleteVendorCredit(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.credits() });
+      message.success('Vendor credit deleted');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to delete vendor credit');
+    },
+  });
+}
+
+export function useVoidVendorCredit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => purchasesService.voidVendorCredit(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.credits() });
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.creditDetail(id) });
+      message.success('Vendor credit voided');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to void vendor credit');
+    },
+  });
+}
+
+export function useApplyVendorCredit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ApplyVendorCreditDto }) =>
+      purchasesService.applyVendorCredit(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.credits() });
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.creditDetail(id) });
+      queryClient.invalidateQueries({ queryKey: purchaseKeys.bills() });
+      message.success('Vendor credit applied successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to apply vendor credit');
     },
   });
 }

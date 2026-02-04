@@ -72,17 +72,24 @@ model User {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Activity tracking
-  salesOrders           SalesOrder[]        @relation("SalesOrderSalesPerson")
-  createdSalesOrders    SalesOrder[]        @relation("SalesOrderCreatedBy")
-  createdItems          Item[]              @relation("ItemCreatedBy")
-  createdInvoices       Invoice[]
-  createdPOs            PurchaseOrder[]     @relation("PurchaseOrderCreatedBy")
-  createdReceives       PurchaseReceive[]   @relation("PurchaseReceiveCreatedBy")
-  createdBills          Bill[]              @relation("BillCreatedBy")
-  createdVendorPmts     VendorPayment[]     @relation("VendorPaymentCreatedBy")
-  createdAdjustments    StockAdjustment[]   @relation("StockAdjustmentCreatedBy")
-  createdTransfers      InventoryTransfer[] @relation("TransferCreatedBy")
-  receivedTransfers     InventoryTransfer[] @relation("TransferReceivedBy")
+  salesOrders        SalesOrder[]        @relation("SalesOrderSalesPerson")
+  createdSalesOrders SalesOrder[]        @relation("SalesOrderCreatedBy")
+  createdItems       Item[]              @relation("ItemCreatedBy")
+  createdInvoices    Invoice[]
+  createdPOs         PurchaseOrder[]     @relation("PurchaseOrderCreatedBy")
+  createdReceives    PurchaseReceive[]   @relation("PurchaseReceiveCreatedBy")
+  createdBills       Bill[]              @relation("BillCreatedBy")
+  createdVendorPmts  VendorPayment[]     @relation("VendorPaymentCreatedBy")
+  createdAdjustments StockAdjustment[]   @relation("StockAdjustmentCreatedBy")
+  createdTransfers   InventoryTransfer[] @relation("TransferCreatedBy")
+  receivedTransfers  InventoryTransfer[] @relation("TransferReceivedBy")
+
+  // Sales Returns & Credits
+  createdSalesReturns  SalesReturn[]  @relation("SalesReturnCreatedBy")
+  approvedSalesReturns SalesReturn[]  @relation("SalesReturnApprovedBy")
+  receivedSalesReturns SalesReturn[]  @relation("SalesReturnReceivedBy")
+  createdCreditNotes   CreditNote[]   @relation("CreditNoteCreatedBy")
+  createdVendorCredits VendorCredit[] @relation("VendorCreditCreatedBy")
 
   @@index([organizationId])
   @@index([email])
@@ -157,14 +164,15 @@ model Item {
   serialNumbers SerialNumber[]
 
   // Transaction relations
-  salesOrderItems       SalesOrderItem[]
-  invoiceItems          InvoiceItem[]
-  purchaseOrderItems    PurchaseOrderItem[]
-  purchaseReceiveItems  PurchaseReceiveItem[]
-  billItems             BillItem[]
-  stockAdjustmentItems  StockAdjustmentItem[]
-  stockAdjustments      StockAdjustment[]      @relation("ItemAdjustments")
-  transferItems         InventoryTransferItem[]
+  salesOrderItems      SalesOrderItem[]
+  invoiceItems         InvoiceItem[]
+  purchaseOrderItems   PurchaseOrderItem[]
+  purchaseReceiveItems PurchaseReceiveItem[]
+  billItems            BillItem[]
+  stockAdjustmentItems StockAdjustmentItem[]
+  stockAdjustments     StockAdjustment[]       @relation("ItemAdjustments")
+  transferItems        InventoryTransferItem[]
+  salesReturnItems     SalesReturnItem[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -244,6 +252,7 @@ model Warehouse {
   salesOrders      SalesOrder[]
   transfersFrom    InventoryTransfer[] @relation("TransfersFrom")
   transfersTo      InventoryTransfer[] @relation("TransfersTo")
+  salesReturns     SalesReturn[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -355,26 +364,26 @@ model StockAdjustmentItem {
 }
 
 model InventoryTransfer {
-  id                 String                  @id @default(cuid())
-  organizationId     String
-  transferNumber     String                  @unique
-  sourceWarehouseId  String
-  targetWarehouseId  String
-  transferDate       DateTime                @default(now())
-  status             TransferStatus          @default(DRAFT)
-  notes              String?
-  createdById        String?
-  receivedById       String?
-  receivedAt         DateTime?
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
+  id                String         @id @default(cuid())
+  organizationId    String
+  transferNumber    String         @unique
+  sourceWarehouseId String
+  targetWarehouseId String
+  transferDate      DateTime       @default(now())
+  status            TransferStatus @default(DRAFT)
+  notes             String?
+  createdById       String?
+  receivedById      String?
+  receivedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   // Relations
-  sourceWarehouse    Warehouse               @relation("TransfersFrom", fields: [sourceWarehouseId], references: [id])
-  targetWarehouse    Warehouse               @relation("TransfersTo", fields: [targetWarehouseId], references: [id])
-  createdBy          User?                   @relation("TransferCreatedBy", fields: [createdById], references: [id])
-  receivedBy         User?                   @relation("TransferReceivedBy", fields: [receivedById], references: [id])
-  items              InventoryTransferItem[]
+  sourceWarehouse Warehouse               @relation("TransfersFrom", fields: [sourceWarehouseId], references: [id])
+  targetWarehouse Warehouse               @relation("TransfersTo", fields: [targetWarehouseId], references: [id])
+  createdBy       User?                   @relation("TransferCreatedBy", fields: [createdById], references: [id])
+  receivedBy      User?                   @relation("TransferReceivedBy", fields: [receivedById], references: [id])
+  items           InventoryTransferItem[]
 
   @@index([organizationId])
   @@index([sourceWarehouseId])
@@ -384,17 +393,17 @@ model InventoryTransfer {
 }
 
 model InventoryTransferItem {
-  id                  String            @id @default(cuid())
+  id                  String  @id @default(cuid())
   inventoryTransferId String
   itemId              String
-  quantityRequested   Decimal           @db.Decimal(15, 4)
-  quantityShipped     Decimal           @default(0) @db.Decimal(15, 4)
-  quantityReceived    Decimal           @default(0) @db.Decimal(15, 4)
+  quantityRequested   Decimal @db.Decimal(15, 4)
+  quantityShipped     Decimal @default(0) @db.Decimal(15, 4)
+  quantityReceived    Decimal @default(0) @db.Decimal(15, 4)
   notes               String?
 
   // Relations
-  inventoryTransfer   InventoryTransfer @relation(fields: [inventoryTransferId], references: [id], onDelete: Cascade)
-  item                Item              @relation(fields: [itemId], references: [id])
+  inventoryTransfer InventoryTransfer @relation(fields: [inventoryTransferId], references: [id], onDelete: Cascade)
+  item              Item              @relation(fields: [itemId], references: [id])
 
   @@index([inventoryTransferId])
   @@index([itemId])
@@ -431,17 +440,21 @@ model Contact {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   paymentTerm  PaymentTerm? @relation(fields: [paymentTermId], references: [id])
   priceList    PriceList?   @relation(fields: [priceListId], references: [id])
+  addresses    Address[]
 
   // Transaction relations (Customer)
-  salesOrders SalesOrder[]
-  invoices    Invoice[]
-  payments    Payment[]
+  salesOrders  SalesOrder[]
+  invoices     Invoice[]
+  payments     Payment[]
+  salesReturns SalesReturn[] @relation("SalesReturnCustomer")
+  creditNotes  CreditNote[]  @relation("CreditNoteCustomer")
 
   // Transaction relations (Vendor)
   purchaseOrders   PurchaseOrder[]
   purchaseReceives PurchaseReceive[]
   bills            Bill[]
   vendorPayments   VendorPayment[]
+  vendorCredits    VendorCredit[]    @relation("VendorCreditVendor")
 
   // Serial tracking
   serialNumbers SerialNumber[]
@@ -449,6 +462,30 @@ model Contact {
   @@index([organizationId])
   @@index([type])
   @@index([status])
+}
+
+model Address {
+  id             String   @id @default(cuid())
+  contactId      String
+  contact        Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  label          String // "Main Office", "Warehouse KL", etc.
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String
+  postcode       String
+  country        String   @default("Malaysia")
+  isDefault      Boolean  @default(false)
+  isBilling      Boolean  @default(true)
+  isShipping     Boolean  @default(true)
+  phone          String?
+  attention      String? // Contact person at address
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([contactId])
+  @@index([organizationId])
 }
 
 // ============================================
@@ -493,6 +530,7 @@ model SalesOrder {
   createdBy    User?            @relation("SalesOrderCreatedBy", fields: [createdById], references: [id])
   items        SalesOrderItem[]
   invoices     Invoice[]
+  salesReturns SalesReturn[]
 
   @@unique([organizationId, orderNumber])
   @@index([organizationId])
@@ -560,12 +598,14 @@ model Invoice {
   updatedAt DateTime @updatedAt
 
   // Relations
-  organization       Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  salesOrder         SalesOrder?         @relation(fields: [salesOrderId], references: [id])
-  customer           Contact             @relation(fields: [customerId], references: [id])
-  createdBy          User?               @relation(fields: [createdById], references: [id])
-  items              InvoiceItem[]
-  paymentAllocations PaymentAllocation[]
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesOrder             SalesOrder?             @relation(fields: [salesOrderId], references: [id])
+  customer               Contact                 @relation(fields: [customerId], references: [id])
+  createdBy              User?                   @relation(fields: [createdById], references: [id])
+  items                  InvoiceItem[]
+  paymentAllocations     PaymentAllocation[]
+  salesReturns           SalesReturn[]
+  creditNoteApplications CreditNoteApplication[]
 
   @@unique([organizationId, invoiceNumber])
   @@index([organizationId])
@@ -739,12 +779,13 @@ model Bill {
   updatedAt         DateTime      @updatedAt
 
   // Relations
-  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  purchaseOrder      PurchaseOrder?            @relation(fields: [purchaseOrderId], references: [id])
-  vendor             Contact                   @relation(fields: [vendorId], references: [id])
-  createdBy          User?                     @relation("BillCreatedBy", fields: [createdById], references: [id])
-  items              BillItem[]
-  paymentAllocations VendorPaymentAllocation[]
+  organization             Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrder            PurchaseOrder?            @relation(fields: [purchaseOrderId], references: [id])
+  vendor                   Contact                   @relation(fields: [vendorId], references: [id])
+  createdBy                User?                     @relation("BillCreatedBy", fields: [createdById], references: [id])
+  items                    BillItem[]
+  paymentAllocations       VendorPaymentAllocation[]
+  vendorCreditApplications VendorCreditApplication[]
 
   @@unique([organizationId, billNumber])
   @@index([organizationId])
@@ -880,23 +921,46 @@ model PurchaseReceiveItem {
 // ============================================
 
 model TaxRate {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   name           String
-  rate           Decimal  @db.Decimal(5, 2)
-  type           TaxType  @default(SST)
+  code           String // Tax code e.g., "ST10", "ST6", "ZR", "EX"
+  rate           Decimal   @db.Decimal(5, 2)
+  type           TaxType   @default(SST)
   description    String?
-  isDefault      Boolean  @default(false)
-  status         Status   @default(ACTIVE)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isDefault      Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  status         Status    @default(ACTIVE)
+  effectiveFrom  DateTime?
+  effectiveTo    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   items        Item[]
 
+  @@unique([organizationId, code])
   @@index([organizationId])
   @@index([type])
+  @@index([isActive])
+}
+
+model OrganizationTaxSettings {
+  id                   String         @id @default(cuid())
+  organizationId       String         @unique
+  isSstRegistered      Boolean        @default(false)
+  sstRegistrationNo    String?
+  sstRegisteredDate    DateTime?
+  sstThreshold         Decimal?       @db.Decimal(15, 2) // RM 500,000
+  defaultSalesTaxId    String?
+  defaultPurchaseTaxId String?
+  taxInclusive         Boolean        @default(false)
+  roundingMethod       RoundingMethod @default(NORMAL)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@index([organizationId])
 }
 
 model PaymentTerm {
@@ -906,6 +970,7 @@ model PaymentTerm {
   days           Int
   description    String?
   isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
   status         Status   @default(ACTIVE)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -914,6 +979,7 @@ model PaymentTerm {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   contacts     Contact[]
 
+  @@unique([organizationId, name])
   @@index([organizationId])
 }
 
@@ -1071,6 +1137,13 @@ enum TaxType {
   SERVICE_TAX // Service Tax (6%)
   EXEMPT
   ZERO_RATED
+  OUT_OF_SCOPE // Outside SST scope
+}
+
+enum RoundingMethod {
+  NORMAL
+  ROUND_DOWN
+  ROUND_UP
 }
 
 enum DiscountType {
@@ -1101,4 +1174,279 @@ enum EInvoiceStatus {
   VALIDATED
   REJECTED
   CANCELLED
+}
+
+// ============================================
+// EMAIL NOTIFICATIONS
+// ============================================
+
+model EmailLog {
+  id             String      @id @default(cuid())
+  type           EmailType
+  to             String
+  cc             String?
+  subject        String
+  body           String?     @db.Text
+  status         EmailStatus @default(PENDING)
+  sentAt         DateTime?
+  error          String?     @db.Text
+  referenceType  String? // 'invoice', 'payment', 'sales_order', 'purchase_order'
+  referenceId    String?
+  organizationId String
+  createdById    String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([organizationId, type])
+  @@index([referenceType, referenceId])
+  @@index([status])
+}
+
+model OrganizationEmailSettings {
+  id              String   @id @default(cuid())
+  organizationId  String   @unique
+  smtpHost        String?
+  smtpPort        Int?     @default(587)
+  smtpSecure      Boolean  @default(true)
+  smtpUser        String?
+  smtpPass        String? // Should be encrypted in production
+  fromName        String?
+  fromEmail       String?
+  replyTo         String?
+  signature       String?  @db.Text
+  autoSendInvoice Boolean  @default(false)
+  autoSendPayment Boolean  @default(false)
+  autoSendOrder   Boolean  @default(false)
+  autoSendPO      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum EmailType {
+  INVOICE_CREATED
+  PAYMENT_RECEIVED
+  ORDER_CONFIRMED
+  PO_ISSUED
+  CUSTOM
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+}
+
+// ============================================
+// SALES RETURNS & CREDIT NOTES
+// ============================================
+
+model SalesReturn {
+  id             String            @id @default(cuid())
+  organizationId String
+  returnNumber   String
+  invoiceId      String?
+  invoice        Invoice?          @relation(fields: [invoiceId], references: [id])
+  salesOrderId   String?
+  salesOrder     SalesOrder?       @relation(fields: [salesOrderId], references: [id])
+  customerId     String
+  customer       Contact           @relation("SalesReturnCustomer", fields: [customerId], references: [id])
+  returnDate     DateTime          @default(now())
+  status         ReturnStatus      @default(PENDING)
+  reason         ReturnReason
+  notes          String?
+  subtotal       Decimal           @default(0) @db.Decimal(15, 2)
+  taxAmount      Decimal           @default(0) @db.Decimal(15, 2)
+  total          Decimal           @default(0) @db.Decimal(15, 2)
+  creditNoteId   String?
+  creditNote     CreditNote?       @relation(fields: [creditNoteId], references: [id])
+  warehouseId    String?
+  warehouse      Warehouse?        @relation(fields: [warehouseId], references: [id])
+  restockItems   Boolean           @default(true)
+  createdById    String?
+  createdBy      User?             @relation("SalesReturnCreatedBy", fields: [createdById], references: [id])
+  approvedById   String?
+  approvedBy     User?             @relation("SalesReturnApprovedBy", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  receivedById   String?
+  receivedBy     User?             @relation("SalesReturnReceivedBy", fields: [receivedById], references: [id])
+  receivedAt     DateTime?
+  items          SalesReturnItem[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([organizationId, returnNumber])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([status])
+  @@index([returnDate])
+}
+
+model SalesReturnItem {
+  id            String        @id @default(cuid())
+  salesReturnId String
+  salesReturn   SalesReturn   @relation(fields: [salesReturnId], references: [id], onDelete: Cascade)
+  itemId        String
+  item          Item          @relation(fields: [itemId], references: [id])
+  quantity      Decimal       @db.Decimal(15, 4)
+  unitPrice     Decimal       @db.Decimal(15, 4)
+  taxAmount     Decimal       @default(0) @db.Decimal(15, 2)
+  total         Decimal       @db.Decimal(15, 2)
+  condition     ItemCondition @default(GOOD)
+  restocked     Boolean       @default(false)
+
+  @@index([salesReturnId])
+  @@index([itemId])
+}
+
+model CreditNote {
+  id             String                  @id @default(cuid())
+  organizationId String
+  creditNumber   String
+  customerId     String
+  customer       Contact                 @relation("CreditNoteCustomer", fields: [customerId], references: [id])
+  creditDate     DateTime                @default(now())
+  salesReturnId  String?
+  subtotal       Decimal                 @default(0) @db.Decimal(15, 2)
+  taxAmount      Decimal                 @default(0) @db.Decimal(15, 2)
+  total          Decimal                 @default(0) @db.Decimal(15, 2)
+  balance        Decimal                 @default(0) @db.Decimal(15, 2)
+  status         CreditNoteStatus        @default(OPEN)
+  notes          String?
+  createdById    String?
+  createdBy      User?                   @relation("CreditNoteCreatedBy", fields: [createdById], references: [id])
+  items          CreditNoteItem[]
+  applications   CreditNoteApplication[]
+  salesReturns   SalesReturn[]
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@unique([organizationId, creditNumber])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model CreditNoteItem {
+  id           String     @id @default(cuid())
+  creditNoteId String
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  description  String
+  quantity     Decimal    @default(1) @db.Decimal(15, 4)
+  unitPrice    Decimal    @db.Decimal(15, 4)
+  taxAmount    Decimal    @default(0) @db.Decimal(15, 2)
+  total        Decimal    @db.Decimal(15, 2)
+
+  @@index([creditNoteId])
+}
+
+model CreditNoteApplication {
+  id           String     @id @default(cuid())
+  creditNoteId String
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  invoiceId    String
+  invoice      Invoice    @relation(fields: [invoiceId], references: [id])
+  amount       Decimal    @db.Decimal(15, 2)
+  appliedDate  DateTime   @default(now())
+  createdById  String?
+
+  @@index([creditNoteId])
+  @@index([invoiceId])
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  RECEIVED
+  PROCESSED
+  REJECTED
+}
+
+enum ReturnReason {
+  DEFECTIVE
+  WRONG_ITEM
+  CHANGED_MIND
+  NOT_AS_DESCRIBED
+  QUALITY_ISSUE
+  DUPLICATE_ORDER
+  OTHER
+}
+
+enum ItemCondition {
+  GOOD
+  DAMAGED
+  DEFECTIVE
+}
+
+enum CreditNoteStatus {
+  OPEN
+  PARTIALLY_APPLIED
+  FULLY_APPLIED
+  VOID
+}
+
+// ============================================
+// VENDOR CREDITS
+// ============================================
+
+model VendorCredit {
+  id             String                    @id @default(cuid())
+  organizationId String
+  creditNumber   String
+  vendorId       String
+  vendor         Contact                   @relation("VendorCreditVendor", fields: [vendorId], references: [id])
+  creditDate     DateTime                  @default(now())
+  reference      String?
+  subtotal       Decimal                   @default(0) @db.Decimal(15, 2)
+  taxAmount      Decimal                   @default(0) @db.Decimal(15, 2)
+  total          Decimal                   @default(0) @db.Decimal(15, 2)
+  balance        Decimal                   @default(0) @db.Decimal(15, 2)
+  status         VendorCreditStatus        @default(OPEN)
+  reason         String?
+  notes          String?
+  createdById    String?
+  createdBy      User?                     @relation("VendorCreditCreatedBy", fields: [createdById], references: [id])
+  items          VendorCreditItem[]
+  applications   VendorCreditApplication[]
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@unique([organizationId, creditNumber])
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([status])
+}
+
+model VendorCreditItem {
+  id             String       @id @default(cuid())
+  vendorCreditId String
+  vendorCredit   VendorCredit @relation(fields: [vendorCreditId], references: [id], onDelete: Cascade)
+  description    String
+  quantity       Decimal      @default(1) @db.Decimal(15, 4)
+  unitPrice      Decimal      @db.Decimal(15, 4)
+  taxAmount      Decimal      @default(0) @db.Decimal(15, 2)
+  total          Decimal      @db.Decimal(15, 2)
+
+  @@index([vendorCreditId])
+}
+
+model VendorCreditApplication {
+  id             String       @id @default(cuid())
+  vendorCreditId String
+  vendorCredit   VendorCredit @relation(fields: [vendorCreditId], references: [id], onDelete: Cascade)
+  billId         String
+  bill           Bill         @relation(fields: [billId], references: [id])
+  amount         Decimal      @db.Decimal(15, 2)
+  appliedDate    DateTime     @default(now())
+  createdById    String?
+
+  @@index([vendorCreditId])
+  @@index([billId])
+}
+
+enum VendorCreditStatus {
+  OPEN
+  PARTIALLY_APPLIED
+  FULLY_APPLIED
+  VOID
 }

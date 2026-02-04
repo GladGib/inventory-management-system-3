@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .content {
+      padding: 30px;
+    }
+    .invoice-details {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 6px;
+      margin: 20px 0;
+      border-left: 4px solid #1890ff;
+    }
+    .invoice-details p {
+      margin: 8px 0;
+    }
+    .amount {
+      font-size: 28px;
+      font-weight: bold;
+      color: #1890ff;
+      margin: 15px 0;
+    }
+    .footer {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-top: 1px solid #e8e8e8;
+      color: #666;
+      font-size: 13px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #1890ff;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      margin: 15px 0;
+    }
+    .btn:hover {
+      background: #096dd9;
+    }
+    .signature {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e8e8e8;
+    }
+    .label {
+      font-weight: 600;
+      color: #666;
+      display: inline-block;
+      width: 140px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>{{organization.name}}</h1>
+    </div>
+
+    <div class="content">
+      <p>Dear {{customer.displayName}},</p>
+
+      <p>Please find attached invoice <strong>{{invoice.invoiceNumber}}</strong> for your recent purchase.</p>
+
+      <div class="invoice-details">
+        <p><span class="label">Invoice Number:</span> {{invoice.invoiceNumber}}</p>
+        <p><span class="label">Invoice Date:</span> {{formatDate invoice.invoiceDate}}</p>
+        <p><span class="label">Due Date:</span> {{formatDate invoice.dueDate}}</p>
+        <p class="amount">Amount Due: {{formatCurrency invoice.balance}}</p>
+      </div>
+
+      <p>The invoice is attached to this email as a PDF document.</p>
+
+      <p>If you have any questions about this invoice, please don't hesitate to contact us.</p>
+
+      <p>Thank you for your business!</p>
+
+      {{#if signature}}
+      <div class="signature">
+        {{{signature}}}
+      </div>
+      {{/if}}
+    </div>
+
+    <div class="footer">
+      <p><strong>{{organization.name}}</strong></p>
+      {{#if organization.phone}}<p>Phone: {{organization.phone}}</p>{{/if}}
+      {{#if organization.email}}<p>Email: {{organization.email}}</p>{{/if}}
+      <p style="margin-top: 15px; font-size: 11px; color: #999;">
+        This email was sent from IMS - Inventory Management System
+      </p>
+    </div>
+  </div>
+</body>
+</html>

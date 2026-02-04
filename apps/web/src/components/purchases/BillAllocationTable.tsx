@@ -27,7 +27,6 @@ interface BillAllocationTableProps {
 }
 
 export function BillAllocationTable({
-  bills,
   allocations,
   onChange,
   maxAmount,

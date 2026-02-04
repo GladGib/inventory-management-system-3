@@ -2,7 +2,6 @@
 
 import { Card, Row, Col, Typography, Space } from 'antd';
 import {
-  BarChartOutlined,
   ShoppingCartOutlined,
   TeamOutlined,
   InboxOutlined,
@@ -13,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 interface ReportCard {
   icon: React.ReactNode;
@@ -61,6 +60,13 @@ const inventoryReports: ReportCard[] = [
     description: 'Calculate total inventory value at cost price by warehouse.',
     href: '/reports/inventory-valuation',
     color: '#eb2f96',
+  },
+  {
+    icon: <ClockCircleOutlined />,
+    title: 'Stock Aging',
+    description: 'Identify slow-moving inventory and aging stock for better management.',
+    href: '/reports/stock-aging',
+    color: '#fa8c16',
   },
 ];
 

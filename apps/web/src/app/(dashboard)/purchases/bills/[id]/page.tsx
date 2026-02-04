@@ -1,7 +1,6 @@
 'use client';
 
 import { use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import {
@@ -45,7 +44,6 @@ const statusColors: Record<BillStatus, string> = {
 
 export default function BillDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
 
   const { data: bill, isLoading } = useBill(id);
   const approveBill = useApproveBill();
