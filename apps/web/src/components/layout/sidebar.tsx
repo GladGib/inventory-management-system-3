@@ -43,6 +43,11 @@ const menuItems: MenuItem[] = [
     getItem('Stock Summary', '/inventory'),
     getItem('Adjustments', '/inventory/adjustments'),
     getItem('Transfers', '/inventory/transfers'),
+    getItem('Batches', '/inventory/batches'),
+    getItem('Serial Numbers', '/inventory/serials'),
+    getItem('Warranty Claims', '/inventory/warranty-claims'),
+    getItem('Assemblies', '/inventory/assemblies'),
+    getItem('Reorder', '/inventory/reorder'),
     getItem('Warehouses', '/inventory/warehouses'),
   ]),
   getItem('Sales', '/sales', <ShoppingCartOutlined />, [
@@ -65,6 +70,9 @@ const menuItems: MenuItem[] = [
   getItem('Settings', '/settings', <SettingOutlined />, [
     getItem('Organization', '/settings'),
     getItem('Tax Rates', '/settings/tax-rates'),
+    getItem('Payment Terms', '/settings/payment-terms'),
+    getItem('Price Lists', '/settings/price-lists'),
+    getItem('e-Invoice', '/settings/einvoice'),
   ]),
 ];
 

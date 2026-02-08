@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Layout } from 'antd';
 import { Sidebar, Header } from '@/components/layout';
+import { PageErrorBoundary } from '@/components/PageErrorBoundary';
 
 const { Content } = Layout;
 
@@ -19,7 +20,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}
       >
         <Header collapsed={collapsed} />
-        <Content className="page-container">{children}</Content>
+        <Content className="page-container">
+          <PageErrorBoundary>{children}</PageErrorBoundary>
+        </Content>
       </Layout>
     </Layout>
   );

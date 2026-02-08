@@ -209,6 +209,48 @@ export interface StockAgingResponse {
   filters: StockAgingFilters;
 }
 
+// SST Report Types
+export interface SSTTaxByRate {
+  rateName: string;
+  rateCode: string;
+  ratePercent: number;
+  taxType: string;
+  taxableSupplies?: number;
+  taxableInputs?: number;
+  taxAmount: number;
+  transactionCount: number;
+}
+
+export interface SSTReportResponse {
+  period: { fromDate: string; toDate: string };
+  organizationId: string;
+  sstRegistrationNo: string | null;
+  isSstRegistered: boolean;
+  outputTax: {
+    taxableSupplies: number;
+    exemptSupplies: number;
+    zeroRatedSupplies: number;
+    outOfScopeSupplies: number;
+    totalOutputTax: number;
+    byRate: SSTTaxByRate[];
+    invoiceCount: number;
+    totalInvoiced: number;
+  };
+  inputTax: {
+    taxableInputs: number;
+    totalInputTax: number;
+    byRate: SSTTaxByRate[];
+    billCount: number;
+    totalBilled: number;
+  };
+  summary: {
+    totalOutputTax: number;
+    totalInputTax: number;
+    netTaxPayable: number;
+    isRefundDue: boolean;
+  };
+}
+
 // Service
 export const reportsService = {
   // Sales Reports
@@ -343,6 +385,14 @@ export const reportsService = {
   // Purchase Reports
   async getPayablesAging(): Promise<PayablesAgingResponse> {
     const response = await api.get('/reports/purchases/payables-aging');
+    return response.data;
+  },
+
+  // SST Tax Report
+  async getSSTReport(dateRange: DateRange): Promise<SSTReportResponse> {
+    const response = await api.get('/reports/sst', {
+      params: { fromDate: dateRange.fromDate, toDate: dateRange.toDate },
+    });
     return response.data;
   },
 

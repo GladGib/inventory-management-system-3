@@ -9,6 +9,7 @@ import {
   FileTextOutlined,
   ClockCircleOutlined,
   AppstoreOutlined,
+  AlertOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 
@@ -68,6 +69,20 @@ const inventoryReports: ReportCard[] = [
     href: '/reports/stock-aging',
     color: '#fa8c16',
   },
+  {
+    icon: <ClockCircleOutlined />,
+    title: 'Batch Expiry',
+    description: 'Track batches approaching expiry and view expired stock requiring action.',
+    href: '/reports/batch-expiry',
+    color: '#f5222d',
+  },
+  {
+    icon: <AlertOutlined />,
+    title: 'Reorder Report',
+    description: 'Items below reorder point, pending reorders, and stock coverage days.',
+    href: '/reports/reorder',
+    color: '#faad14',
+  },
 ];
 
 const purchaseReports: ReportCard[] = [
@@ -77,6 +92,17 @@ const purchaseReports: ReportCard[] = [
     description: 'Track outstanding vendor bills by aging bucket.',
     href: '/reports/payables-aging',
     color: '#fa8c16',
+  },
+];
+
+const taxReports: ReportCard[] = [
+  {
+    icon: <DollarOutlined />,
+    title: 'SST Tax Report (SST-03)',
+    description:
+      'Sales & Service Tax report with output tax, input tax, and net tax payable summary.',
+    href: '/reports/sst',
+    color: '#13c2c2',
   },
 ];
 
@@ -162,6 +188,12 @@ export default function ReportsPage() {
         title="Purchase Reports"
         icon={<FileTextOutlined style={{ fontSize: 20, color: '#fa8c16' }} />}
         reports={purchaseReports}
+      />
+
+      <ReportSection
+        title="Tax Reports"
+        icon={<DollarOutlined style={{ fontSize: 20, color: '#13c2c2' }} />}
+        reports={taxReports}
       />
     </div>
   );

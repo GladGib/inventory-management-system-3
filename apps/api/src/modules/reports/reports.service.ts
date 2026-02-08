@@ -499,7 +499,7 @@ export class ReportsService {
     return {
       period: { fromDate, toDate },
       data: invoiceItems.map((i) => {
-        const item = itemsMap.get(i.itemId);
+        const item: any = itemsMap.get(i.itemId);
         const quantitySold = Number(i._sum.quantity) || 0;
         const revenue = Number(i._sum.amount) || 0;
         const costPrice = Number(item?.costPrice) || 0;
@@ -890,6 +890,246 @@ export class ReportsService {
         totalPurchases: Number(p._sum.total) || 0,
         totalTax: Number(p._sum.taxAmount) || 0,
       })),
+    };
+  }
+
+  // ============ SST Tax Report (SST-03 format) ============
+
+  async getSSTReport(
+    organizationId: string,
+    range: DateRange,
+  ) {
+    const { fromDate, toDate } = range;
+
+    // Get organization tax settings
+    const taxSettings = await this.prisma.organizationTaxSettings.findUnique({
+      where: { organizationId },
+    });
+
+    // Get all active tax rates for the organization
+    const taxRates = await this.prisma.taxRate.findMany({
+      where: { organizationId, isActive: true },
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const taxRateMap = new Map<string, any>(taxRates.map((tr: any) => [tr.id, tr]));
+
+    // === OUTPUT TAX (Sales) ===
+    // Get all invoice items in the period with their tax info
+    const invoiceItems = await this.prisma.invoiceItem.findMany({
+      where: {
+        invoice: {
+          organizationId,
+          invoiceDate: { gte: fromDate, lte: toDate },
+          status: { notIn: ['DRAFT', 'VOID'] },
+        },
+      },
+      select: {
+        quantity: true,
+        amount: true,
+        taxRateId: true,
+        taxAmount: true,
+        invoice: {
+          select: {
+            invoiceNumber: true,
+            invoiceDate: true,
+            customer: { select: { displayName: true } },
+          },
+        },
+      },
+    });
+
+    // Aggregate output tax by rate
+    const outputTaxByRate: Record<string, {
+      rateName: string;
+      rateCode: string;
+      ratePercent: number;
+      taxType: string;
+      taxableSupplies: number;
+      taxAmount: number;
+      transactionCount: number;
+    }> = {};
+
+    let totalTaxableSupplies = 0;
+    let totalOutputTax = 0;
+    let totalExemptSupplies = 0;
+    let totalZeroRatedSupplies = 0;
+    let totalOutOfScopeSupplies = 0;
+
+    for (const item of invoiceItems) {
+      const amount = Number(item.amount || 0);
+      const tax = Number(item.taxAmount || 0);
+
+      if (item.taxRateId) {
+        const taxRate = taxRateMap.get(item.taxRateId);
+        if (taxRate) {
+          const key = taxRate.id;
+          if (!outputTaxByRate[key]) {
+            outputTaxByRate[key] = {
+              rateName: taxRate.name,
+              rateCode: taxRate.code,
+              ratePercent: Number(taxRate.rate),
+              taxType: taxRate.type,
+              taxableSupplies: 0,
+              taxAmount: 0,
+              transactionCount: 0,
+            };
+          }
+          outputTaxByRate[key].taxableSupplies += amount;
+          outputTaxByRate[key].taxAmount += tax;
+          outputTaxByRate[key].transactionCount += 1;
+
+          // Categorize by tax type
+          if (taxRate.type === 'EXEMPT') {
+            totalExemptSupplies += amount;
+          } else if (taxRate.type === 'ZERO_RATED') {
+            totalZeroRatedSupplies += amount;
+          } else if (taxRate.type === 'OUT_OF_SCOPE') {
+            totalOutOfScopeSupplies += amount;
+          } else {
+            totalTaxableSupplies += amount;
+            totalOutputTax += tax;
+          }
+        }
+      } else {
+        // No tax rate assigned - count as out of scope
+        totalOutOfScopeSupplies += amount;
+      }
+    }
+
+    // === INPUT TAX (Purchases) ===
+    const billItems = await this.prisma.billItem.findMany({
+      where: {
+        bill: {
+          organizationId,
+          billDate: { gte: fromDate, lte: toDate },
+          status: { notIn: ['DRAFT', 'VOID'] },
+        },
+      },
+      select: {
+        quantity: true,
+        total: true,
+        taxRateId: true,
+        taxAmount: true,
+        bill: {
+          select: {
+            billNumber: true,
+            billDate: true,
+            vendor: { select: { displayName: true } },
+          },
+        },
+      },
+    });
+
+    const inputTaxByRate: Record<string, {
+      rateName: string;
+      rateCode: string;
+      ratePercent: number;
+      taxType: string;
+      taxableInputs: number;
+      taxAmount: number;
+      transactionCount: number;
+    }> = {};
+
+    let totalTaxableInputs = 0;
+    let totalInputTax = 0;
+
+    for (const item of billItems) {
+      const amount = Number(item.total || 0);
+      const tax = Number(item.taxAmount || 0);
+
+      if (item.taxRateId) {
+        const taxRate = taxRateMap.get(item.taxRateId);
+        if (taxRate && taxRate.type !== 'EXEMPT' && taxRate.type !== 'ZERO_RATED' && taxRate.type !== 'OUT_OF_SCOPE') {
+          const key = taxRate.id;
+          if (!inputTaxByRate[key]) {
+            inputTaxByRate[key] = {
+              rateName: taxRate.name,
+              rateCode: taxRate.code,
+              ratePercent: Number(taxRate.rate),
+              taxType: taxRate.type,
+              taxableInputs: 0,
+              taxAmount: 0,
+              transactionCount: 0,
+            };
+          }
+          inputTaxByRate[key].taxableInputs += amount;
+          inputTaxByRate[key].taxAmount += tax;
+          inputTaxByRate[key].transactionCount += 1;
+
+          totalTaxableInputs += amount;
+          totalInputTax += tax;
+        }
+      }
+    }
+
+    // === SUMMARY ===
+    const netTaxPayable = totalOutputTax - totalInputTax;
+
+    // Invoice and bill aggregates for the period
+    const [invoiceAgg, billAgg] = await Promise.all([
+      this.prisma.invoice.aggregate({
+        where: {
+          organizationId,
+          invoiceDate: { gte: fromDate, lte: toDate },
+          status: { notIn: ['DRAFT', 'VOID'] },
+        },
+        _count: true,
+        _sum: { total: true, subtotal: true, taxAmount: true },
+      }),
+      this.prisma.bill.aggregate({
+        where: {
+          organizationId,
+          billDate: { gte: fromDate, lte: toDate },
+          status: { notIn: ['DRAFT', 'VOID'] },
+        },
+        _count: true,
+        _sum: { total: true, subtotal: true, taxAmount: true },
+      }),
+    ]);
+
+    return {
+      period: { fromDate, toDate },
+      organizationId,
+      sstRegistrationNo: taxSettings?.sstRegistrationNo || null,
+      isSstRegistered: taxSettings?.isSstRegistered || false,
+
+      // Section A: Output Tax
+      outputTax: {
+        taxableSupplies: Math.round(totalTaxableSupplies * 100) / 100,
+        exemptSupplies: Math.round(totalExemptSupplies * 100) / 100,
+        zeroRatedSupplies: Math.round(totalZeroRatedSupplies * 100) / 100,
+        outOfScopeSupplies: Math.round(totalOutOfScopeSupplies * 100) / 100,
+        totalOutputTax: Math.round(totalOutputTax * 100) / 100,
+        byRate: Object.values(outputTaxByRate).map((r) => ({
+          ...r,
+          taxableSupplies: Math.round(r.taxableSupplies * 100) / 100,
+          taxAmount: Math.round(r.taxAmount * 100) / 100,
+        })),
+        invoiceCount: invoiceAgg._count,
+        totalInvoiced: Math.round(Number(invoiceAgg._sum.total || 0) * 100) / 100,
+      },
+
+      // Section B: Input Tax
+      inputTax: {
+        taxableInputs: Math.round(totalTaxableInputs * 100) / 100,
+        totalInputTax: Math.round(totalInputTax * 100) / 100,
+        byRate: Object.values(inputTaxByRate).map((r) => ({
+          ...r,
+          taxableInputs: Math.round(r.taxableInputs * 100) / 100,
+          taxAmount: Math.round(r.taxAmount * 100) / 100,
+        })),
+        billCount: billAgg._count,
+        totalBilled: Math.round(Number(billAgg._sum.total || 0) * 100) / 100,
+      },
+
+      // Section C: Summary
+      summary: {
+        totalOutputTax: Math.round(totalOutputTax * 100) / 100,
+        totalInputTax: Math.round(totalInputTax * 100) / 100,
+        netTaxPayable: Math.round(netTaxPayable * 100) / 100,
+        isRefundDue: netTaxPayable < 0,
+      },
     };
   }
 

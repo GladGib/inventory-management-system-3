@@ -481,6 +481,7 @@ export class InventoryService {
           manufactureDate: dto.manufactureDate,
           expiryDate: dto.expiryDate,
           quantity: dto.quantity,
+          organizationId,
         },
         include: {
           item: { select: { sku: true, name: true } },
@@ -615,6 +616,7 @@ export class InventoryService {
           warehouseId: dto.warehouseId,
           serialNumber: dto.serialNumber,
           status: 'IN_STOCK',
+          organizationId,
         },
         include: {
           item: { select: { sku: true, name: true } },
@@ -677,7 +679,8 @@ export class InventoryService {
           itemId: dto.itemId,
           warehouseId: dto.warehouseId,
           serialNumber: sn,
-          status: 'IN_STOCK',
+          status: 'IN_STOCK' as const,
+          organizationId,
         })),
       });
 

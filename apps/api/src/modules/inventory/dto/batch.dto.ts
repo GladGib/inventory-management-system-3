@@ -4,7 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsDate,
-  IsArray,
+  IsEnum,
   Min,
   MaxLength,
 } from 'class-validator';
@@ -45,6 +45,22 @@ export class CreateBatchDto {
   @Min(0)
   @Type(() => Number)
   quantity: number;
+
+  @ApiPropertyOptional({ description: 'Notes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+
+  @ApiPropertyOptional({ description: 'Purchase receive ID' })
+  @IsOptional()
+  @IsString()
+  purchaseReceiveId?: string;
+
+  @ApiPropertyOptional({ description: 'Supplier ID' })
+  @IsOptional()
+  @IsString()
+  supplierId?: string;
 }
 
 export class UpdateBatchDto {
@@ -62,10 +78,14 @@ export class UpdateBatchDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  quantity?: number;
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+
+  @ApiPropertyOptional({ enum: ['ACTIVE', 'EXPIRED', 'DEPLETED', 'RECALLED'] })
+  @IsOptional()
+  @IsEnum(['ACTIVE', 'EXPIRED', 'DEPLETED', 'RECALLED'])
+  status?: 'ACTIVE' | 'EXPIRED' | 'DEPLETED' | 'RECALLED';
 }
 
 export class TransferBatchDto {
@@ -84,4 +104,55 @@ export class TransferBatchDto {
   @Min(1)
   @Type(() => Number)
   quantity: number;
+}
+
+export class BatchAdjustmentDto {
+  @ApiProperty({ description: 'Batch ID' })
+  @IsString()
+  @IsNotEmpty()
+  batchId: string;
+
+  @ApiProperty({ description: 'Quantity adjustment (positive or negative)' })
+  @IsNumber()
+  @Type(() => Number)
+  quantity: number;
+
+  @ApiProperty({ description: 'Reason for adjustment' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  reason: string;
+
+  @ApiPropertyOptional({ description: 'Notes' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
+export class BatchAllocationDto {
+  @ApiProperty({ description: 'Item ID' })
+  @IsString()
+  @IsNotEmpty()
+  itemId: string;
+
+  @ApiProperty({ description: 'Warehouse ID' })
+  @IsString()
+  @IsNotEmpty()
+  warehouseId: string;
+
+  @ApiProperty({ description: 'Total quantity to allocate' })
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  quantity: number;
+
+  @ApiPropertyOptional({
+    description: 'Allocation method: FIFO or FEFO',
+    enum: ['FIFO', 'FEFO'],
+    default: 'FEFO',
+  })
+  @IsOptional()
+  @IsEnum(['FIFO', 'FEFO'])
+  method?: 'FIFO' | 'FEFO';
 }

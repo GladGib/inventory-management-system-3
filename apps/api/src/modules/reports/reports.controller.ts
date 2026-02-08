@@ -193,6 +193,24 @@ export class ReportsController {
     return this.reportsService.getPayablesAging(organizationId);
   }
 
+  // ============ SST Tax Report ============
+
+  @Get('sst')
+  @ApiOperation({ summary: 'Get SST-03 tax report' })
+  @ApiResponse({ status: 200, description: 'SST tax report in SST-03 format' })
+  @ApiQuery({ name: 'fromDate', required: true })
+  @ApiQuery({ name: 'toDate', required: true })
+  async getSSTReport(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('fromDate') fromDate: string,
+    @Query('toDate') toDate: string,
+  ) {
+    return this.reportsService.getSSTReport(organizationId, {
+      fromDate: new Date(fromDate),
+      toDate: new Date(toDate),
+    });
+  }
+
   // ============ Stock Aging Report ============
 
   @Get('inventory/stock-aging')

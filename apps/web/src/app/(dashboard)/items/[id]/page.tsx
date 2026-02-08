@@ -136,6 +136,7 @@ export default function ItemDetailPage() {
     INVENTORY: 'blue',
     SERVICE: 'purple',
     NON_INVENTORY: 'cyan',
+    COMPOSITE: 'green',
   };
 
   return (

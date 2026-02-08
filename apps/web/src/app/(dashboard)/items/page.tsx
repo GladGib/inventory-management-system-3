@@ -142,6 +142,7 @@ export default function ItemsPage() {
           INVENTORY: 'blue',
           SERVICE: 'purple',
           NON_INVENTORY: 'cyan',
+          COMPOSITE: 'green',
         };
         return <Tag color={colors[type]}>{type.replace('_', ' ')}</Tag>;
       },

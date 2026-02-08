@@ -1,0 +1,300 @@
+/**
+ * Frontend mirror of all Prisma enums.
+ * Keep in sync with apps/api/prisma/schema.prisma
+ */
+
+export enum Industry {
+  AUTO_PARTS = 'AUTO_PARTS',
+  HARDWARE = 'HARDWARE',
+  SPARE_PARTS = 'SPARE_PARTS',
+  GENERAL = 'GENERAL',
+}
+
+export enum Status {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  MANAGER = 'MANAGER',
+  STAFF = 'STAFF',
+  VIEWER = 'VIEWER',
+}
+
+export enum ItemType {
+  INVENTORY = 'INVENTORY',
+  SERVICE = 'SERVICE',
+  NON_INVENTORY = 'NON_INVENTORY',
+  COMPOSITE = 'COMPOSITE',
+}
+
+export enum ContactType {
+  CUSTOMER = 'CUSTOMER',
+  VENDOR = 'VENDOR',
+  BOTH = 'BOTH',
+}
+
+export enum SerialStatus {
+  IN_STOCK = 'IN_STOCK',
+  SOLD = 'SOLD',
+  RETURNED = 'RETURNED',
+  DAMAGED = 'DAMAGED',
+  DEFECTIVE = 'DEFECTIVE',
+  IN_REPAIR = 'IN_REPAIR',
+  SCRAPPED = 'SCRAPPED',
+  IN_TRANSIT = 'IN_TRANSIT',
+}
+
+export enum SerialAction {
+  RECEIVED = 'RECEIVED',
+  SOLD = 'SOLD',
+  RETURNED = 'RETURNED',
+  TRANSFERRED = 'TRANSFERRED',
+  ADJUSTED = 'ADJUSTED',
+  REPAIRED = 'REPAIRED',
+  SCRAPPED = 'SCRAPPED',
+}
+
+export enum ClaimStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  RESOLVED = 'RESOLVED',
+}
+
+export enum BatchStatus {
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  DEPLETED = 'DEPLETED',
+  RECALLED = 'RECALLED',
+}
+
+export enum BatchTransactionType {
+  RECEIVE = 'RECEIVE',
+  SALE = 'SALE',
+  ADJUSTMENT = 'ADJUSTMENT',
+  TRANSFER_IN = 'TRANSFER_IN',
+  TRANSFER_OUT = 'TRANSFER_OUT',
+  RETURN = 'RETURN',
+  WRITE_OFF = 'WRITE_OFF',
+}
+
+export enum AssemblyMethod {
+  MANUAL = 'MANUAL',
+  ON_SALE = 'ON_SALE',
+}
+
+export enum AssemblyStatus {
+  DRAFT = 'DRAFT',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum AlertStatus {
+  PENDING = 'PENDING',
+  ACKNOWLEDGED = 'ACKNOWLEDGED',
+  PO_CREATED = 'PO_CREATED',
+  RESOLVED = 'RESOLVED',
+  IGNORED = 'IGNORED',
+}
+
+export enum ForecastMethod {
+  MOVING_AVERAGE = 'MOVING_AVERAGE',
+  EXPONENTIAL_SMOOTHING = 'EXPONENTIAL_SMOOTHING',
+  SEASONAL = 'SEASONAL',
+  MANUAL = 'MANUAL',
+}
+
+export enum EInvoiceDocType {
+  INVOICE = 'INVOICE',
+  CREDIT_NOTE = 'CREDIT_NOTE',
+  DEBIT_NOTE = 'DEBIT_NOTE',
+  REFUND_NOTE = 'REFUND_NOTE',
+  SELF_BILLED = 'SELF_BILLED',
+}
+
+export enum AdjustmentType {
+  INCREASE = 'INCREASE',
+  DECREASE = 'DECREASE',
+}
+
+export enum TransferStatus {
+  DRAFT = 'DRAFT',
+  IN_TRANSIT = 'IN_TRANSIT',
+  RECEIVED = 'RECEIVED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum TransactionStatus {
+  DRAFT = 'DRAFT',
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ReceiveTransactionStatus {
+  PENDING = 'PENDING',
+  RECEIVED = 'RECEIVED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum SalesOrderStatus {
+  DRAFT = 'DRAFT',
+  CONFIRMED = 'CONFIRMED',
+  PACKED = 'PACKED',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  CLOSED = 'CLOSED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum InvoiceStatus {
+  DRAFT = 'DRAFT',
+  SENT = 'SENT',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  PAID = 'PAID',
+  OVERDUE = 'OVERDUE',
+  VOID = 'VOID',
+  NOT_INVOICED = 'NOT_INVOICED',
+  PARTIALLY_INVOICED = 'PARTIALLY_INVOICED',
+  INVOICED = 'INVOICED',
+}
+
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  PAID = 'PAID',
+}
+
+export enum ShipmentStatus {
+  NOT_SHIPPED = 'NOT_SHIPPED',
+  PARTIALLY_SHIPPED = 'PARTIALLY_SHIPPED',
+  SHIPPED = 'SHIPPED',
+}
+
+export enum PurchaseOrderStatus {
+  DRAFT = 'DRAFT',
+  ISSUED = 'ISSUED',
+  PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
+  RECEIVED = 'RECEIVED',
+  CLOSED = 'CLOSED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ReceiveStatus {
+  NOT_RECEIVED = 'NOT_RECEIVED',
+  PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
+  RECEIVED = 'RECEIVED',
+}
+
+export enum BillStatus {
+  DRAFT = 'DRAFT',
+  RECEIVED = 'RECEIVED',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  PAID = 'PAID',
+  OVERDUE = 'OVERDUE',
+  VOID = 'VOID',
+  NOT_BILLED = 'NOT_BILLED',
+  PARTIALLY_BILLED = 'PARTIALLY_BILLED',
+  BILLED = 'BILLED',
+}
+
+export enum TaxType {
+  SST = 'SST',
+  SERVICE_TAX = 'SERVICE_TAX',
+  EXEMPT = 'EXEMPT',
+  ZERO_RATED = 'ZERO_RATED',
+  OUT_OF_SCOPE = 'OUT_OF_SCOPE',
+}
+
+export enum RoundingMethod {
+  NORMAL = 'NORMAL',
+  ROUND_DOWN = 'ROUND_DOWN',
+  ROUND_UP = 'ROUND_UP',
+}
+
+export enum DiscountType {
+  PERCENTAGE = 'PERCENTAGE',
+  FIXED = 'FIXED',
+}
+
+export enum PaymentMethod {
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  CHEQUE = 'CHEQUE',
+  CREDIT_CARD = 'CREDIT_CARD',
+  FPX = 'FPX',
+  DUITNOW = 'DUITNOW',
+  GRABPAY = 'GRABPAY',
+  TNG_EWALLET = 'TNG_EWALLET',
+  OTHER = 'OTHER',
+}
+
+export enum PriceListType {
+  SALES = 'SALES',
+  PURCHASE = 'PURCHASE',
+}
+
+export enum EInvoiceStatus {
+  PENDING = 'PENDING',
+  SUBMITTED = 'SUBMITTED',
+  VALIDATED = 'VALIDATED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum EmailType {
+  INVOICE_CREATED = 'INVOICE_CREATED',
+  PAYMENT_RECEIVED = 'PAYMENT_RECEIVED',
+  ORDER_CONFIRMED = 'ORDER_CONFIRMED',
+  PO_ISSUED = 'PO_ISSUED',
+  CUSTOM = 'CUSTOM',
+}
+
+export enum EmailStatus {
+  PENDING = 'PENDING',
+  SENT = 'SENT',
+  FAILED = 'FAILED',
+  BOUNCED = 'BOUNCED',
+}
+
+export enum ReturnStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  RECEIVED = 'RECEIVED',
+  PROCESSED = 'PROCESSED',
+  REJECTED = 'REJECTED',
+}
+
+export enum ReturnReason {
+  DEFECTIVE = 'DEFECTIVE',
+  WRONG_ITEM = 'WRONG_ITEM',
+  CHANGED_MIND = 'CHANGED_MIND',
+  NOT_AS_DESCRIBED = 'NOT_AS_DESCRIBED',
+  QUALITY_ISSUE = 'QUALITY_ISSUE',
+  DUPLICATE_ORDER = 'DUPLICATE_ORDER',
+  OTHER = 'OTHER',
+}
+
+export enum ItemCondition {
+  GOOD = 'GOOD',
+  DAMAGED = 'DAMAGED',
+  DEFECTIVE = 'DEFECTIVE',
+}
+
+export enum CreditNoteStatus {
+  OPEN = 'OPEN',
+  PARTIALLY_APPLIED = 'PARTIALLY_APPLIED',
+  FULLY_APPLIED = 'FULLY_APPLIED',
+  VOID = 'VOID',
+}
+
+export enum VendorCreditStatus {
+  OPEN = 'OPEN',
+  PARTIALLY_APPLIED = 'PARTIALLY_APPLIED',
+  FULLY_APPLIED = 'FULLY_APPLIED',
+  VOID = 'VOID',
+}

@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Put,
   Query,
+  Body,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -81,5 +83,28 @@ export class DashboardController {
     @CurrentUser('organizationId') organizationId: string
   ) {
     return this.dashboardService.getAlerts(organizationId);
+  }
+
+  @Get('layout')
+  @ApiOperation({ summary: 'Get user dashboard layout' })
+  @ApiResponse({ status: 200, description: 'User dashboard layout' })
+  async getDashboardLayout(
+    @CurrentUser('id') userId: string
+  ) {
+    return this.dashboardService.getDashboardLayout(userId);
+  }
+
+  @Put('layout')
+  @ApiOperation({ summary: 'Save user dashboard layout' })
+  @ApiResponse({ status: 200, description: 'Layout saved' })
+  async saveDashboardLayout(
+    @CurrentUser('id') userId: string,
+    @Body() body: { layoutConfig: any[]; widgetSettings?: Record<string, any> }
+  ) {
+    return this.dashboardService.saveDashboardLayout(
+      userId,
+      body.layoutConfig,
+      body.widgetSettings || {},
+    );
   }
 }

@@ -49,6 +49,21 @@ model Organization {
   paymentTerms   PaymentTerm[]
   priceLists     PriceList[]
 
+  // Reorder & Forecast
+  itemReorderSettings ItemReorderSettings[]
+  reorderAlerts       ReorderAlert[]
+  demandForecasts     DemandForecast[]
+
+  // Warranty
+  warrantyClaims WarrantyClaim[]
+
+  // E-Invoice
+  eInvoiceSettings    EInvoiceSettings?
+  eInvoiceSubmissions EInvoiceSubmission[]
+
+  // Assembly
+  assemblies Assembly[]
+
   @@index([slug])
   @@index([status])
 }
@@ -90,6 +105,15 @@ model User {
   receivedSalesReturns SalesReturn[]  @relation("SalesReturnReceivedBy")
   createdCreditNotes   CreditNote[]   @relation("CreditNoteCreatedBy")
   createdVendorCredits VendorCredit[] @relation("VendorCreditCreatedBy")
+
+  // Warranty
+  createdWarrantyClaims WarrantyClaim[] @relation("WarrantyClaimCreatedBy")
+
+  // Dashboard
+  dashboardLayouts UserDashboardLayout[]
+
+  // Assembly
+  createdAssemblies Assembly[] @relation("AssemblyCreatedBy")
 
   @@index([organizationId])
   @@index([email])
@@ -163,6 +187,10 @@ model Item {
   batches       Batch[]
   serialNumbers SerialNumber[]
 
+  // Composite item relations
+  compositeItem  CompositeItem?
+  componentOf    BOMComponent[]   @relation("ComponentItem")
+
   // Transaction relations
   salesOrderItems      SalesOrderItem[]
   invoiceItems         InvoiceItem[]
@@ -173,6 +201,14 @@ model Item {
   stockAdjustments     StockAdjustment[]       @relation("ItemAdjustments")
   transferItems        InventoryTransferItem[]
   salesReturnItems     SalesReturnItem[]
+
+  // Reorder & Forecast
+  reorderSettings  ItemReorderSettings[]
+  reorderAlerts    ReorderAlert[]
+  demandForecasts  DemandForecast[]
+
+  // Assembly
+  assemblyItems AssemblyItem[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -254,6 +290,14 @@ model Warehouse {
   transfersTo      InventoryTransfer[] @relation("TransfersTo")
   salesReturns     SalesReturn[]
 
+  // Reorder & Forecast
+  itemReorderSettings ItemReorderSettings[]
+  reorderAlerts       ReorderAlert[]
+  demandForecasts     DemandForecast[]
+
+  // Assembly
+  assemblies Assembly[]
+
   @@unique([organizationId, code])
   @@index([organizationId])
 }
@@ -277,25 +321,49 @@ model StockLevel {
 }
 
 model Batch {
-  id              String    @id @default(cuid())
+  id              String      @id @default(cuid())
   itemId          String
   warehouseId     String
   batchNumber     String
   manufactureDate DateTime?
   expiryDate      DateTime?
-  quantity        Decimal   @default(0) @db.Decimal(15, 4)
-  status          Status    @default(ACTIVE)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  quantity        Decimal     @default(0) @db.Decimal(15, 4)
+  initialQuantity Decimal     @default(0) @db.Decimal(15, 4)
+  status          BatchStatus @default(ACTIVE)
+  notes           String?
+  purchaseReceiveId String?
+  supplierId      String?
+  organizationId  String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   // Relations
   item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
   warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  transactions BatchTransaction[]
 
   @@unique([itemId, warehouseId, batchNumber])
   @@index([itemId])
   @@index([warehouseId])
   @@index([expiryDate])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model BatchTransaction {
+  id              String               @id @default(cuid())
+  batchId         String
+  batch           Batch                @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  type            BatchTransactionType
+  quantity        Decimal              @db.Decimal(15, 4)
+  referenceType   String?
+  referenceId     String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime             @default(now())
+
+  @@index([batchId])
+  @@index([referenceType, referenceId])
 }
 
 model SerialNumber {
@@ -304,18 +372,86 @@ model SerialNumber {
   serialNumber String
   warehouseId  String?
   status       SerialStatus @default(IN_STOCK)
-  soldToId     String? // Contact ID if sold
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  soldToId     String?
+
+  // Purchase info
+  purchaseReceiveId String?
+  purchaseDate      DateTime?
+  purchaseCost      Decimal?  @db.Decimal(15, 4)
+  supplierId        String?
+
+  // Sale info
+  saleDate     DateTime?
+
+  // Warranty
+  warrantyMonths    Int?
+  warrantyStartDate DateTime?
+  warrantyEndDate   DateTime?
+
+  notes          String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   item      Item       @relation(fields: [itemId], references: [id], onDelete: Cascade)
   warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
   soldTo    Contact?   @relation(fields: [soldToId], references: [id])
+  history   SerialHistory[]
+  warrantyClaims WarrantyClaim[]
+  replacementWarrantyClaims WarrantyClaim[] @relation("ReplacementSerial")
 
   @@unique([itemId, serialNumber])
   @@index([itemId])
   @@index([warehouseId])
+  @@index([status])
+  @@index([organizationId])
+}
+
+model SerialHistory {
+  id              String       @id @default(cuid())
+  serialNumberId  String
+  serialNumber    SerialNumber @relation(fields: [serialNumberId], references: [id], onDelete: Cascade)
+  action          SerialAction
+  fromStatus      SerialStatus?
+  toStatus        SerialStatus
+  fromWarehouseId String?
+  toWarehouseId   String?
+  referenceType   String?
+  referenceId     String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime     @default(now())
+
+  @@index([serialNumberId])
+  @@index([referenceType, referenceId])
+}
+
+model WarrantyClaim {
+  id               String       @id @default(cuid())
+  claimNumber      String       @unique
+  serialNumberId   String
+  serialNumber     SerialNumber @relation(fields: [serialNumberId], references: [id])
+  customerId       String
+  claimDate        DateTime
+  issueDescription String
+  status           ClaimStatus  @default(PENDING)
+  resolution       String?
+  resolvedDate     DateTime?
+  replacementSerialId String?
+  organizationId   String
+  createdById      String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  customer           Contact?      @relation("WarrantyCustomer", fields: [customerId], references: [id])
+  organization       Organization  @relation(fields: [organizationId], references: [id])
+  createdBy          User?         @relation("WarrantyClaimCreatedBy", fields: [createdById], references: [id])
+  replacementSerial  SerialNumber? @relation("ReplacementSerial", fields: [replacementSerialId], references: [id])
+
+  @@index([serialNumberId])
+  @@index([organizationId])
   @@index([status])
 }
 
@@ -410,6 +546,160 @@ model InventoryTransferItem {
 }
 
 // ============================================
+// COMPOSITE ITEMS (BILL OF MATERIALS)
+// ============================================
+
+model CompositeItem {
+  id              String         @id @default(cuid())
+  itemId          String         @unique
+  item            Item           @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  assemblyMethod  AssemblyMethod @default(MANUAL)
+  organizationId  String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  components BOMComponent[]
+  assemblies Assembly[]
+
+  @@index([organizationId])
+}
+
+model BOMComponent {
+  id              String        @id @default(cuid())
+  compositeItemId String
+  compositeItem   CompositeItem @relation(fields: [compositeItemId], references: [id], onDelete: Cascade)
+  componentItemId String
+  componentItem   Item          @relation("ComponentItem", fields: [componentItemId], references: [id])
+  quantity        Decimal       @db.Decimal(15, 4)
+  notes           String?
+  sortOrder       Int           @default(0)
+
+  @@index([compositeItemId])
+  @@index([componentItemId])
+}
+
+model Assembly {
+  id              String         @id @default(cuid())
+  assemblyNumber  String         @unique
+  compositeItemId String
+  compositeItem   CompositeItem  @relation(fields: [compositeItemId], references: [id])
+  quantity        Decimal        @db.Decimal(15, 4)
+  warehouseId     String
+  status          AssemblyStatus @default(DRAFT)
+  assemblyDate    DateTime?
+  totalCost       Decimal?       @db.Decimal(15, 2)
+  notes           String?
+  organizationId  String
+  createdById     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  warehouse    Warehouse    @relation(fields: [warehouseId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User?        @relation("AssemblyCreatedBy", fields: [createdById], references: [id])
+  items        AssemblyItem[]
+
+  @@index([compositeItemId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model AssemblyItem {
+  id          String   @id @default(cuid())
+  assemblyId  String
+  assembly    Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+  itemId      String
+  item        Item     @relation(fields: [itemId], references: [id])
+  requiredQty Decimal  @db.Decimal(15, 4)
+  consumedQty Decimal  @default(0) @db.Decimal(15, 4)
+  unitCost    Decimal  @default(0) @db.Decimal(15, 4)
+  totalCost   Decimal  @default(0) @db.Decimal(15, 2)
+
+  @@index([assemblyId])
+  @@index([itemId])
+}
+
+// ============================================
+// REORDER AUTOMATION
+// ============================================
+
+model ItemReorderSettings {
+  id              String     @id @default(cuid())
+  itemId          String
+  warehouseId     String?
+  reorderLevel    Decimal    @db.Decimal(15, 4)
+  reorderQuantity Decimal    @db.Decimal(15, 4)
+  safetyStock     Decimal    @default(0) @db.Decimal(15, 4)
+  leadTimeDays    Int        @default(0)
+  preferredVendorId String?
+  autoReorder     Boolean    @default(false)
+  isActive        Boolean    @default(true)
+  organizationId  String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  item            Item          @relation(fields: [itemId], references: [id])
+  warehouse       Warehouse?    @relation(fields: [warehouseId], references: [id])
+  preferredVendor Contact?      @relation("PreferredVendor", fields: [preferredVendorId], references: [id])
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+
+  @@unique([itemId, warehouseId])
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model ReorderAlert {
+  id              String      @id @default(cuid())
+  itemId          String
+  warehouseId     String
+  currentStock    Decimal     @db.Decimal(15, 4)
+  reorderLevel    Decimal     @db.Decimal(15, 4)
+  suggestedQty    Decimal     @db.Decimal(15, 4)
+  status          AlertStatus @default(PENDING)
+  purchaseOrderId String?
+  notifiedAt      DateTime?
+  resolvedAt      DateTime?
+  organizationId  String
+  createdAt       DateTime    @default(now())
+
+  // Relations
+  item          Item            @relation(fields: [itemId], references: [id])
+  warehouse     Warehouse       @relation(fields: [warehouseId], references: [id])
+  purchaseOrder PurchaseOrder?  @relation(fields: [purchaseOrderId], references: [id])
+  organization  Organization    @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([itemId])
+}
+
+model DemandForecast {
+  id              String         @id @default(cuid())
+  itemId          String
+  warehouseId     String?
+  period          DateTime
+  forecastQty     Decimal        @db.Decimal(15, 4)
+  actualQty       Decimal?       @db.Decimal(15, 4)
+  variance        Decimal?       @db.Decimal(15, 4)
+  confidence      Decimal?       @db.Decimal(5, 4)
+  method          ForecastMethod
+  organizationId  String
+  createdAt       DateTime       @default(now())
+
+  // Relations
+  item         Item          @relation(fields: [itemId], references: [id])
+  warehouse    Warehouse?    @relation(fields: [warehouseId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+
+  @@index([itemId])
+  @@index([organizationId])
+  @@index([period])
+}
+
+// ============================================
 // CONTACTS (CUSTOMERS & VENDORS)
 // ============================================
 
@@ -458,6 +748,12 @@ model Contact {
 
   // Serial tracking
   serialNumbers SerialNumber[]
+
+  // Warranty
+  warrantyClaims WarrantyClaim[] @relation("WarrantyCustomer")
+
+  // Reorder
+  preferredVendorReorderSettings ItemReorderSettings[] @relation("PreferredVendor")
 
   @@index([organizationId])
   @@index([type])
@@ -606,6 +902,7 @@ model Invoice {
   paymentAllocations     PaymentAllocation[]
   salesReturns           SalesReturn[]
   creditNoteApplications CreditNoteApplication[]
+  eInvoiceSubmissions    EInvoiceSubmission[]
 
   @@unique([organizationId, invoiceNumber])
   @@index([organizationId])
@@ -718,6 +1015,7 @@ model PurchaseOrder {
   items        PurchaseOrderItem[]
   bills        Bill[]
   receives     PurchaseReceive[]
+  reorderAlerts ReorderAlert[]
 
   @@unique([organizationId, orderNumber])
   @@index([organizationId])
@@ -992,16 +1290,124 @@ model PriceList {
   markupType     DiscountType  @default(PERCENTAGE)
   markupValue    Decimal       @default(0) @db.Decimal(10, 2)
   isDefault      Boolean       @default(false)
+  effectiveFrom  DateTime?
+  effectiveTo    DateTime?
   status         Status        @default(ACTIVE)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   contacts     Contact[]
+  items        PriceListItem[]
 
+  @@unique([organizationId, name])
   @@index([organizationId])
   @@index([type])
+}
+
+model PriceListItem {
+  id          String   @id @default(cuid())
+  priceListId String
+  priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  itemId      String
+  customPrice Decimal  @db.Decimal(15, 4)
+  minQuantity Decimal  @default(1) @db.Decimal(15, 4)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([priceListId, itemId, minQuantity])
+  @@index([priceListId])
+  @@index([itemId])
+}
+
+// ============================================
+// E-INVOICE (MyInvois)
+// ============================================
+
+model EInvoiceSettings {
+  id                  String   @id @default(cuid())
+  organizationId      String   @unique
+  tin                 String?
+  brn                 String?
+  clientId            String?
+  clientSecret        String?
+  certificatePath     String?
+  isProduction        Boolean  @default(false)
+  isEnabled           Boolean  @default(false)
+  autoSubmit          Boolean  @default(false)
+  lastConnectionCheck DateTime?
+  connectionStatus    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model EInvoiceSubmission {
+  id                String          @id @default(cuid())
+  invoiceId         String
+  submissionUuid    String?
+  documentUuid      String?
+  longId            String?
+  status            EInvoiceStatus  @default(PENDING)
+  submittedAt       DateTime?
+  validatedAt       DateTime?
+  cancelledAt       DateTime?
+  rejectionReasons  Json?
+  qrCodeData        String?
+  qrCodeUrl         String?
+  rawRequest        Json?
+  rawResponse       Json?
+  retryCount        Int             @default(0)
+  lastError         String?
+  organizationId    String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  invoice      Invoice          @relation(fields: [invoiceId], references: [id])
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  documents    EInvoiceDocument[]
+
+  @@index([invoiceId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+model EInvoiceDocument {
+  id           String             @id @default(cuid())
+  submissionId String
+  submission   EInvoiceSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  documentType EInvoiceDocType
+  xmlContent   String             @db.Text
+  signedXml    String?            @db.Text
+  hash         String?
+  createdAt    DateTime           @default(now())
+
+  @@index([submissionId])
+}
+
+// ============================================
+// USER DASHBOARD LAYOUT
+// ============================================
+
+model UserDashboardLayout {
+  id             String   @id @default(cuid())
+  userId         String
+  layoutConfig   Json     @default("[]")
+  widgetSettings Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId])
+  @@index([userId])
 }
 
 // ============================================
@@ -1031,6 +1437,7 @@ enum ItemType {
   INVENTORY
   SERVICE
   NON_INVENTORY
+  COMPOSITE
 }
 
 enum ContactType {
@@ -1044,6 +1451,80 @@ enum SerialStatus {
   SOLD
   RETURNED
   DAMAGED
+  DEFECTIVE
+  IN_REPAIR
+  SCRAPPED
+  IN_TRANSIT
+}
+
+enum SerialAction {
+  RECEIVED
+  SOLD
+  RETURNED
+  TRANSFERRED
+  ADJUSTED
+  REPAIRED
+  SCRAPPED
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum BatchStatus {
+  ACTIVE
+  EXPIRED
+  DEPLETED
+  RECALLED
+}
+
+enum BatchTransactionType {
+  RECEIVE
+  SALE
+  ADJUSTMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+  RETURN
+  WRITE_OFF
+}
+
+enum AssemblyMethod {
+  MANUAL
+  ON_SALE
+}
+
+enum AssemblyStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AlertStatus {
+  PENDING
+  ACKNOWLEDGED
+  PO_CREATED
+  RESOLVED
+  IGNORED
+}
+
+enum ForecastMethod {
+  MOVING_AVERAGE
+  EXPONENTIAL_SMOOTHING
+  SEASONAL
+  MANUAL
+}
+
+enum EInvoiceDocType {
+  INVOICE
+  CREDIT_NOTE
+  DEBIT_NOTE
+  REFUND_NOTE
+  SELF_BILLED
 }
 
 enum AdjustmentType {

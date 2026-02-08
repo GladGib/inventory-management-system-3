@@ -2,7 +2,7 @@ import { api } from './api';
 
 // ============ Types ============
 
-export type ItemType = 'INVENTORY' | 'SERVICE' | 'NON_INVENTORY';
+export type ItemType = 'INVENTORY' | 'SERVICE' | 'NON_INVENTORY' | 'COMPOSITE';
 export type ItemStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface Item {

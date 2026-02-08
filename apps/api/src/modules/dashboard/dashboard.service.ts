@@ -371,6 +371,70 @@ export class DashboardService {
     };
   }
 
+  // ============================================
+  // DASHBOARD LAYOUT
+  // ============================================
+
+  async getDashboardLayout(userId: string) {
+    const layout = await this.prisma.userDashboardLayout.findUnique({
+      where: { userId },
+    });
+
+    if (!layout) {
+      return {
+        layoutConfig: this.getDefaultLayout(),
+        widgetSettings: {},
+      };
+    }
+
+    return {
+      layoutConfig: layout.layoutConfig,
+      widgetSettings: layout.widgetSettings,
+    };
+  }
+
+  async saveDashboardLayout(
+    userId: string,
+    layoutConfig: any[],
+    widgetSettings: Record<string, any>,
+  ) {
+    const layout = await this.prisma.userDashboardLayout.upsert({
+      where: { userId },
+      update: {
+        layoutConfig,
+        widgetSettings,
+      },
+      create: {
+        userId,
+        layoutConfig,
+        widgetSettings,
+      },
+    });
+
+    return {
+      layoutConfig: layout.layoutConfig,
+      widgetSettings: layout.widgetSettings,
+    };
+  }
+
+  private getDefaultLayout() {
+    return [
+      { id: 'sales-kpi', type: 'sales-kpi', x: 0, y: 0, w: 6, h: 2, visible: true },
+      { id: 'inventory-kpi', type: 'inventory', x: 6, y: 0, w: 3, h: 2, visible: true },
+      { id: 'pending-orders', type: 'pending-orders', x: 9, y: 0, w: 3, h: 2, visible: true },
+      { id: 'receivables', type: 'receivables', x: 0, y: 2, w: 3, h: 2, visible: true },
+      { id: 'payables', type: 'payables', x: 3, y: 2, w: 3, h: 2, visible: true },
+      { id: 'cash-flow', type: 'cash-flow', x: 6, y: 2, w: 6, h: 2, visible: true },
+      { id: 'sales-chart', type: 'sales-chart', x: 0, y: 4, w: 6, h: 4, visible: true },
+      { id: 'top-items', type: 'top-items', x: 6, y: 4, w: 6, h: 4, visible: true },
+      { id: 'top-customers', type: 'top-customers', x: 0, y: 8, w: 6, h: 4, visible: true },
+      { id: 'pending-actions', type: 'pending-actions', x: 6, y: 8, w: 6, h: 4, visible: true },
+      { id: 'recent-activity', type: 'recent-activity', x: 0, y: 12, w: 12, h: 4, visible: true },
+      { id: 'low-stock', type: 'low-stock', x: 0, y: 16, w: 6, h: 4, visible: false },
+      { id: 'reorder-alerts', type: 'reorder-alerts', x: 6, y: 16, w: 6, h: 4, visible: false },
+    ];
+  }
+
   private async getLowStockItems(organizationId: string, limit: number) {
     const items = await this.prisma.item.findMany({
       where: {

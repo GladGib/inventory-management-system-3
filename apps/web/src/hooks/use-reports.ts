@@ -12,6 +12,7 @@ import {
   InventoryValuationResponse,
   StockAgingResponse,
   StockAgingFilters,
+  SSTReportResponse,
 } from '@/lib/reports';
 
 // Query keys
@@ -31,6 +32,8 @@ export const reportKeys = {
     [...reportKeys.inventory(), 'valuation', warehouseId, pagination] as const,
   purchases: () => [...reportKeys.all, 'purchases'] as const,
   payablesAging: () => [...reportKeys.purchases(), 'payables-aging'] as const,
+  tax: () => [...reportKeys.all, 'tax'] as const,
+  sst: (dateRange: DateRange) => [...reportKeys.tax(), 'sst', dateRange] as const,
 };
 
 // ============ Sales Report Queries ============
@@ -88,6 +91,16 @@ export function usePayablesAging() {
   return useQuery<PayablesAgingResponse>({
     queryKey: reportKeys.payablesAging(),
     queryFn: () => reportsService.getPayablesAging(),
+  });
+}
+
+// ============ SST Tax Report Queries ============
+
+export function useSSTReport(dateRange: DateRange) {
+  return useQuery<SSTReportResponse>({
+    queryKey: reportKeys.sst(dateRange),
+    queryFn: () => reportsService.getSSTReport(dateRange),
+    enabled: !!dateRange.fromDate && !!dateRange.toDate,
   });
 }
 

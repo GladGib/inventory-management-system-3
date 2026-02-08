@@ -26,6 +26,7 @@ import { EInvoiceModule } from './modules/einvoice/einvoice.module';
 
 // Settings Modules
 import { PaymentTermsModule } from './modules/settings/payment-terms/payment-terms.module';
+import { PriceListsModule } from './modules/price-lists/price-lists.module';
 
 // Phase 5: Reports & Dashboard
 import { ReportsModule } from './modules/reports/reports.module';
@@ -33,6 +34,10 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 // Phase 6: Email Notifications
 import { EmailModule } from './modules/email/email.module';
+
+// Phase 7: Composite Items & Reorder Automation
+import { CompositeModule } from './modules/composite/composite.module';
+import { ReorderModule } from './modules/reorder/reorder.module';
 
 // App Controller for health check
 import { AppController } from './app.controller';
@@ -87,9 +92,14 @@ import { AppService } from './app.service';
 
     // Settings Modules
     PaymentTermsModule,
+    PriceListsModule,
 
     // Phase 6: Email Notifications
     EmailModule,
+
+    // Phase 7: Composite Items & Reorder Automation
+    CompositeModule,
+    ReorderModule,
   ],
   controllers: [AppController],
   providers: [
