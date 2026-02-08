@@ -1,6 +1,6 @@
 # IMS Development Backlog
 
-Last updated: 2026-02-07 (Phase 4 + Phase 6 Advanced + Tech Debt + Gaps - implementation complete)
+Last updated: 2026-02-08 (Phase 4 + Phase 6 Advanced + Tech Debt + Gaps - verified & archived)
 
 This document tracks remaining, incomplete, and not-yet-implemented features based on the Implementation Plan and OpenSpec specifications.
 
@@ -152,7 +152,7 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 
 | Feature | Status | Spec | Notes |
 |---------|--------|------|-------|
-| BM translations | Done | localization | next-intl framework, 350+ keys EN/BM (2026-02-07) |
+| BM translations | Done | localization | i18n framework, 620+ keys EN/BM across 19 namespaces (2026-02-07) |
 | Document templates BM | **Partial** | localization | i18n infrastructure ready, templates need integration |
 | Malaysian date format | Done | localization | DD/MM/YYYY via formatters.ts (2026-02-07) |
 | Malaysian number format | Done | localization | RM currency, formatCurrency(), formatPhone() (2026-02-07) |
@@ -369,12 +369,36 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 - Error boundaries (ErrorBoundary, PageErrorBoundary)
 - Consistent API error format (AllExceptionsFilter)
 
-### Verification Status
-- Frontend build: PASSED (66 pages generated)
-- Backend schema: VALID
-- Prisma schema: VALID with 15+ new models
-- New frontend routes: 19 new pages
-- New backend modules: composite, reorder, price-lists (+ expanded einvoice, inventory, reports)
+### Verification & Fixes (2026-02-08)
+
+**Verification performed:**
+- Backend TypeScript type-check: 0 errors (150 files)
+- Frontend build: PASSED (86 pages generated, 3 non-critical warnings)
+- Frontend lint: PASSED (warnings only, no errors)
+- Prisma schema: VALID with all relations enforced
+- API route alignment: 68/68 frontend-backend route pairs verified
+- i18n key parity: EN/BM files have identical key structures (19 namespaces)
+- Module registration: All 3 new modules registered in app.module.ts
+
+**Fixes applied during verification:**
+- Added `@relation` directives to 9 Prisma models (23 forward + 23 reverse relations) for referential integrity
+- Added `RolesGuard` to PriceListsController (was missing role-based access control)
+- Added Price Lists + Payment Terms to sidebar navigation (were unreachable)
+- Removed 32 unused imports across 23 files
+- Replaced 11 `any` types with proper TypeScript types
+- Added 75 i18n keys across 4 new namespaces (composite, reorder, warranty, dashboardCustom)
+- Added missing `EInvoiceDocument` and `UserDashboardLayout` interfaces to shared types
+- Consolidated duplicate `PaginatedResponse` definitions (composite.ts, reorder.ts now import from inventory.ts)
+- Added `COMPOSITE` to frontend `ItemType` union and color map
+- Fixed `organizationId` on Batch/SerialNumber creates
+- Fixed `EInvoiceStatus` return type from `string` to enum union
+
+**Commit:** `8b46cf4` — 151 files, 24,105 insertions
+
+### Known Gaps (not blocking)
+- No backend test files exist (0 `*.spec.ts` files) — test coverage is a remaining tech debt item
+- Zod validation schemas only cover original P0 forms (item, contact, sales-order, invoice, purchase-order) — new feature forms use backend-only validation
+- `useEffect` dependency warning in reorder settings page (intentional to avoid infinite loop)
 
 ### Remaining Work (~7%)
 - Document templates BM integration (1 item - partial)
