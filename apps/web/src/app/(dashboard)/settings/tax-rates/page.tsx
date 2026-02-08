@@ -33,7 +33,15 @@ import {
   useInitializeTaxRates,
 } from '@/hooks/use-tax-rates';
 import { TaxRateForm } from '@/components/tax/TaxRateForm';
-import { TaxRate, TAX_TYPE_LABELS, TAX_TYPE_COLORS, TaxType } from '@/lib/tax-rates';
+import {
+  TaxRate,
+  TaxRegime,
+  TAX_TYPE_LABELS,
+  TAX_TYPE_COLORS,
+  TAX_REGIME_LABELS,
+  TAX_REGIME_COLORS,
+  TaxType,
+} from '@/lib/tax-rates';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
@@ -169,6 +177,45 @@ export default function TaxRatesPage() {
       render: (type: TaxType) => <Tag color={TAX_TYPE_COLORS[type]}>{TAX_TYPE_LABELS[type]}</Tag>,
     },
     {
+      title: 'Regime',
+      dataIndex: 'taxRegime',
+      key: 'taxRegime',
+      width: 160,
+      render: (regime: TaxRegime | null) =>
+        regime ? (
+          <Tag color={TAX_REGIME_COLORS[regime]}>{TAX_REGIME_LABELS[regime]}</Tag>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
+    },
+    {
+      title: 'Effective Period',
+      key: 'effectivePeriod',
+      width: 180,
+      render: (_: unknown, record: TaxRate) => {
+        const from = record.effectiveFrom
+          ? new Date(record.effectiveFrom).toLocaleDateString('en-MY', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })
+          : null;
+        const to = record.effectiveTo
+          ? new Date(record.effectiveTo).toLocaleDateString('en-MY', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })
+          : null;
+        if (!from && !to) return <Text type="secondary">No restriction</Text>;
+        return (
+          <Text style={{ fontSize: 12 }}>
+            {from || 'Start'} - {to || 'Ongoing'}
+          </Text>
+        );
+      },
+    },
+    {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
@@ -214,7 +261,7 @@ export default function TaxRatesPage() {
             <Title level={4} style={{ margin: 0 }}>
               Tax Rates
             </Title>
-            <Text type="secondary">Configure SST tax rates for your organization</Text>
+            <Text type="secondary">Configure SST/GST tax rates for your organization</Text>
           </div>
           <Space>
             {taxRates.length === 0 && (

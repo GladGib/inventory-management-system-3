@@ -41,6 +41,7 @@ import {
   useCreateInvoiceFromOrder,
 } from '@/hooks/use-sales';
 import { SalesOrder, SalesOrderStatus, SalesOrderQueryParams } from '@/lib/sales';
+import { TableSkeleton } from '@/components/skeletons';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -249,6 +250,33 @@ export default function SalesOrdersPage() {
       limit: pagination.pageSize || 25,
     }));
   };
+
+  if (isLoading) {
+    return (
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Sales Orders
+          </Title>
+          <Link href="/sales/orders/new">
+            <Button type="primary" icon={<PlusOutlined />}>
+              New Order
+            </Button>
+          </Link>
+        </div>
+        <Card>
+          <TableSkeleton rows={10} columns={7} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>

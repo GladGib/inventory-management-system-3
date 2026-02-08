@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import { useCustomers, useDeleteContact } from '@/hooks/use-contacts';
 import { Contact, ContactQueryParams } from '@/lib/contacts';
+import { TableSkeleton } from '@/components/skeletons';
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -169,6 +170,36 @@ export default function CustomersPage() {
       limit: pagination.pageSize || 25,
     }));
   };
+
+  if (isLoading) {
+    return (
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Customers
+          </Title>
+          <Space>
+            <Button icon={<DownloadOutlined />}>Export</Button>
+            <Link href="/contacts/customers/new">
+              <Button type="primary" icon={<PlusOutlined />}>
+                New Customer
+              </Button>
+            </Link>
+          </Space>
+        </div>
+        <Card>
+          <TableSkeleton rows={10} columns={6} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -40,6 +40,7 @@ import {
   useCreateBillFromOrder,
 } from '@/hooks/use-purchases';
 import { PurchaseOrder, PurchaseOrderStatus, PurchaseOrderQueryParams } from '@/lib/purchases';
+import { TableSkeleton } from '@/components/skeletons';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -241,6 +242,33 @@ export default function PurchaseOrdersPage() {
       limit: pagination.pageSize || 25,
     }));
   };
+
+  if (isLoading) {
+    return (
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Purchase Orders
+          </Title>
+          <Link href="/purchases/orders/new">
+            <Button type="primary" icon={<PlusOutlined />}>
+              New PO
+            </Button>
+          </Link>
+        </div>
+        <Card>
+          <TableSkeleton rows={10} columns={7} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>

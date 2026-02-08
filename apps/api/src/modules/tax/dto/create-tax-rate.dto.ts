@@ -17,9 +17,16 @@ import { Type } from 'class-transformer';
 export enum TaxType {
   SST = 'SST',
   SERVICE_TAX = 'SERVICE_TAX',
+  GST = 'GST',
   EXEMPT = 'EXEMPT',
   ZERO_RATED = 'ZERO_RATED',
   OUT_OF_SCOPE = 'OUT_OF_SCOPE',
+}
+
+export enum TaxRegime {
+  GST = 'GST',
+  TAX_HOLIDAY = 'TAX_HOLIDAY',
+  SST = 'SST',
 }
 
 export class CreateTaxRateDto {
@@ -46,6 +53,11 @@ export class CreateTaxRateDto {
   @ApiProperty({ enum: TaxType, example: TaxType.SST, description: 'Tax type' })
   @IsEnum(TaxType)
   type: TaxType;
+
+  @ApiPropertyOptional({ enum: TaxRegime, description: 'Tax regime (GST, TAX_HOLIDAY, SST)' })
+  @IsOptional()
+  @IsEnum(TaxRegime)
+  taxRegime?: TaxRegime;
 
   @ApiPropertyOptional({ description: 'Description of the tax rate' })
   @IsOptional()
@@ -101,6 +113,11 @@ export class UpdateTaxRateDto {
   @IsEnum(TaxType)
   type?: TaxType;
 
+  @ApiPropertyOptional({ enum: TaxRegime })
+  @IsOptional()
+  @IsEnum(TaxRegime)
+  taxRegime?: TaxRegime;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -141,7 +158,15 @@ export const MALAYSIAN_TAX_RATES = {
 export const TAX_TYPE_LABELS = {
   SST: 'Sales Tax',
   SERVICE_TAX: 'Service Tax',
+  GST: 'GST',
   ZERO_RATED: 'Zero Rated',
   EXEMPT: 'Exempt',
   OUT_OF_SCOPE: 'Out of Scope',
+};
+
+// Tax Regime Labels for UI
+export const TAX_REGIME_LABELS = {
+  GST: 'GST Era (Apr 2015 - Aug 2018)',
+  TAX_HOLIDAY: 'Tax Holiday (Sep - Dec 2018)',
+  SST: 'SST Era (Jan 2019 - present)',
 };

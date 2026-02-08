@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="{{_locale}}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{t 'bill'}} - {{documentNumber}}</title>
+  {{> styles}}
+</head>
+<body>
+  <div class="document" style="position: relative;">
+    {{#if isPaid}}
+    <div class="paid-watermark">{{t 'paidStatus'}}</div>
+    {{/if}}
+
+    <!-- Header -->
+    {{> document-header
+        documentTitle=(t 'bill')
+        documentNumber=documentNumber
+        documentDate=billDate
+        documentDateLabel=(t 'billDate')
+        status=status
+        organization=organization
+    }}
+
+    <!-- Vendor Info and Bill Details -->
+    <div class="info-grid">
+      {{> address-block
+          title=(t 'vendor')
+          contact=vendor
+          address=vendor.billingAddress
+      }}
+
+      <div class="document-info-box">
+        <div class="info-row">
+          <span class="info-label">{{t 'billDate'}}</span>
+          <span class="info-value">{{formatDate billDate}}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">{{t 'dueDate'}}</span>
+          <span class="info-value" style="{{#if (eq status 'OVERDUE')}}color: #ff4d4f; font-weight: 700;{{/if}}">
+            {{formatDate dueDate}}
+          </span>
+        </div>
+        {{#ifExists vendorBillNumber}}
+        <div class="info-row">
+          <span class="info-label">{{t 'vendorBillNo'}}</span>
+          <span class="info-value">{{vendorBillNumber}}</span>
+        </div>
+        {{/ifExists}}
+        {{#ifExists purchaseOrderNumber}}
+        <div class="info-row">
+          <span class="info-label">{{t 'poReference'}}</span>
+          <span class="info-value">{{purchaseOrderNumber}}</span>
+        </div>
+        {{/ifExists}}
+        {{#ifExists vendor.taxNumber}}
+        <div class="info-row">
+          <span class="info-label">{{t 'vendorSstNo'}}</span>
+          <span class="info-value">{{vendor.taxNumber}}</span>
+        </div>
+        {{/ifExists}}
+      </div>
+    </div>
+
+    <!-- Line Items -->
+    {{> line-items-table items=items showDiscount=true}}
+
+    <!-- Totals -->
+    {{> totals-section
+        subtotal=subtotal
+        discountAmount=discountAmount
+        taxAmount=taxAmount
+        total=total
+        amountPaid=amountPaid
+        balance=balance
+    }}
+
+    <!-- Notes -->
+    {{#ifExists notes}}
+    <div class="notes-section">
+      <div class="notes-title">{{t 'notes'}}</div>
+      <div class="notes-content">{{notes}}</div>
+    </div>
+    {{/ifExists}}
+
+    <!-- Footer -->
+    {{> document-footer organization=organization}}
+  </div>
+</body>
+</html>

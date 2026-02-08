@@ -134,14 +134,32 @@ export function useIssueTransfer() {
 
   return useMutation({
     mutationFn: (id: string) => inventoryService.issueTransfer(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: inventoryKeys.transferDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<InventoryTransfer>(inventoryKeys.transferDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<InventoryTransfer>(inventoryKeys.transferDetail(id), {
+          ...previousData,
+          status: 'IN_TRANSIT',
+        });
+      }
+      message.success('Transfer issued');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(inventoryKeys.transferDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to issue transfer');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.transfers() });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.transferDetail(id) });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.stock() });
-      message.success('Transfer issued');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to issue transfer');
     },
   });
 }
@@ -151,14 +169,32 @@ export function useReceiveTransfer() {
 
   return useMutation({
     mutationFn: (id: string) => inventoryService.receiveTransfer(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: inventoryKeys.transferDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<InventoryTransfer>(inventoryKeys.transferDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<InventoryTransfer>(inventoryKeys.transferDetail(id), {
+          ...previousData,
+          status: 'COMPLETED',
+        });
+      }
+      message.success('Transfer received');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(inventoryKeys.transferDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to receive transfer');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.transfers() });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.transferDetail(id) });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.stock() });
-      message.success('Transfer received');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to receive transfer');
     },
   });
 }
@@ -168,14 +204,32 @@ export function useCancelTransfer() {
 
   return useMutation({
     mutationFn: (id: string) => inventoryService.cancelTransfer(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: inventoryKeys.transferDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<InventoryTransfer>(inventoryKeys.transferDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<InventoryTransfer>(inventoryKeys.transferDetail(id), {
+          ...previousData,
+          status: 'CANCELLED',
+        });
+      }
+      message.success('Transfer cancelled');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(inventoryKeys.transferDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to cancel transfer');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.transfers() });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.transferDetail(id) });
       queryClient.invalidateQueries({ queryKey: inventoryKeys.stock() });
-      message.success('Transfer cancelled');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to cancel transfer');
     },
   });
 }

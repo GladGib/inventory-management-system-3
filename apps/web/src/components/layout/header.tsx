@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/auth-store';
 import { authService } from '@/lib/auth';
+import { GlobalSearch } from './GlobalSearch';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -66,11 +67,15 @@ export function Header(_props: HeaderProps) {
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         background: '#fff',
         borderBottom: '1px solid #f0f0f0',
       }}
     >
+      <div style={{ flex: 1 }}>
+        <GlobalSearch />
+      </div>
+
       <Space size="middle">
         <Button
           type="text"

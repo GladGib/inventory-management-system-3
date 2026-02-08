@@ -449,7 +449,15 @@
     "einvoiceClientSecret": "Client Secret",
     "language": "Language",
     "english": "English",
-    "bahasaMalaysia": "Bahasa Malaysia"
+    "bahasaMalaysia": "Bahasa Malaysia",
+    "documentLanguage": "Document Language",
+    "documentLanguageDescription": "Default language for generated PDF documents (invoices, sales orders, purchase orders, bills)",
+    "documentLanguageSaved": "Document language preference saved",
+    "documentTemplates": "Document Templates",
+    "documentSettings": "Document Settings",
+    "downloadPdf": "Download PDF",
+    "downloadPdfEn": "Download PDF (English)",
+    "downloadPdfMs": "Download PDF (Bahasa Malaysia)"
   },
   "dashboard": {
     "title": "Dashboard",

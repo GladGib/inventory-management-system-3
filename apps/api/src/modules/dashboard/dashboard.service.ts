@@ -1,11 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { CacheService } from '@/modules/cache/cache.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(DashboardService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async getDashboardOverview(organizationId: string) {
+    const cacheKey = this.cacheService.buildKey('dashboard', 'overview', organizationId);
+    return this.cacheService.wrap(cacheKey, () => this.fetchDashboardOverview(organizationId), 60);
+  }
+
+  private async fetchDashboardOverview(organizationId: string) {
     const today = new Date();
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const startOfYear = new Date(today.getFullYear(), 0, 1);
@@ -159,6 +170,11 @@ export class DashboardService {
   }
 
   async getSalesTrend(organizationId: string, months: number = 12) {
+    const cacheKey = this.cacheService.buildKey('dashboard', 'sales-trend', organizationId, String(months));
+    return this.cacheService.wrap(cacheKey, () => this.fetchSalesTrend(organizationId, months), 60);
+  }
+
+  private async fetchSalesTrend(organizationId: string, months: number = 12) {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months + 1);
@@ -207,6 +223,11 @@ export class DashboardService {
   }
 
   async getTopSellingItems(organizationId: string, limit: number = 10) {
+    const cacheKey = this.cacheService.buildKey('dashboard', 'top-items', organizationId, String(limit));
+    return this.cacheService.wrap(cacheKey, () => this.fetchTopSellingItems(organizationId, limit), 60);
+  }
+
+  private async fetchTopSellingItems(organizationId: string, limit: number = 10) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -243,6 +264,11 @@ export class DashboardService {
   }
 
   async getTopCustomers(organizationId: string, limit: number = 10) {
+    const cacheKey = this.cacheService.buildKey('dashboard', 'top-customers', organizationId, String(limit));
+    return this.cacheService.wrap(cacheKey, () => this.fetchTopCustomers(organizationId, limit), 60);
+  }
+
+  private async fetchTopCustomers(organizationId: string, limit: number = 10) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -278,6 +304,11 @@ export class DashboardService {
   }
 
   async getAlerts(organizationId: string) {
+    const cacheKey = this.cacheService.buildKey('dashboard', 'alerts', organizationId);
+    return this.cacheService.wrap(cacheKey, () => this.fetchAlerts(organizationId), 60);
+  }
+
+  private async fetchAlerts(organizationId: string) {
     const today = new Date();
     const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 

@@ -25,9 +25,18 @@ import {
   DeleteOutlined,
   MoreOutlined,
   ExclamationCircleOutlined,
+  BarcodeOutlined,
+  SwapOutlined,
 } from '@ant-design/icons';
-import { useItem, useDeleteItem } from '@/hooks/use-items';
+import { useItem, useDeleteItem, useSupersessionChain } from '@/hooks/use-items';
 import { ItemType } from '@/lib/items';
+import {
+  CrossReferenceTable,
+  VehicleCompatibilityTable,
+  BarcodeDisplay,
+  SupersessionBanner,
+  SupersessionChain,
+} from '@/components/items';
 import type { TableColumnsType, MenuProps } from 'antd';
 
 const { Title, Text } = Typography;
@@ -50,6 +59,7 @@ export default function ItemDetailPage() {
   const id = params.id as string;
 
   const { data: item, isLoading, error } = useItem(id);
+  const { data: supersessionData } = useSupersessionChain(id);
   const deleteItem = useDeleteItem();
 
   const handleDelete = () => {
@@ -141,6 +151,11 @@ export default function ItemDetailPage() {
 
   return (
     <div>
+      {/* Supersession Banner */}
+      {supersessionData?.isSuperseded && supersessionData.supersededBy && (
+        <SupersessionBanner supersededBy={supersessionData.supersededBy} />
+      )}
+
       {/* Header */}
       <div
         style={{
@@ -150,23 +165,36 @@ export default function ItemDetailPage() {
           marginBottom: 24,
         }}
       >
-        <div>
-          <Space style={{ marginBottom: 8 }}>
-            <Link href="/items">
-              <Button type="text" icon={<ArrowLeftOutlined />}>
-                Back
-              </Button>
-            </Link>
-          </Space>
-          <Title level={4} style={{ margin: 0 }}>
-            {item.name}
-          </Title>
-          <Space style={{ marginTop: 8 }}>
-            <Text type="secondary">SKU: {item.sku}</Text>
-            <Tag color={typeColors[item.type]}>{item.type.replace('_', ' ')}</Tag>
-            <Tag color={item.status === 'ACTIVE' ? 'green' : 'default'}>{item.status}</Tag>
-            {item.isLowStock && <Tag color="red">Low Stock</Tag>}
-          </Space>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+          <div>
+            <Space style={{ marginBottom: 8 }}>
+              <Link href="/items">
+                <Button type="text" icon={<ArrowLeftOutlined />}>
+                  Back
+                </Button>
+              </Link>
+            </Space>
+            <Title level={4} style={{ margin: 0 }}>
+              {item.name}
+            </Title>
+            <Space style={{ marginTop: 8 }}>
+              <Text type="secondary">SKU: {item.sku}</Text>
+              <Tag color={typeColors[item.type]}>{item.type.replace('_', ' ')}</Tag>
+              <Tag color={item.status === 'ACTIVE' ? 'green' : 'default'}>{item.status}</Tag>
+              {item.isLowStock && <Tag color="red">Low Stock</Tag>}
+            </Space>
+          </div>
+          {/* Barcode Display */}
+          <div
+            style={{
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
+              padding: '8px 12px',
+              background: '#fafafa',
+            }}
+          >
+            <BarcodeDisplay itemId={id} width={180} height={60} />
+          </div>
         </div>
         <Space>
           <Link href={`/items/${id}/edit`}>
@@ -313,6 +341,31 @@ export default function ItemDetailPage() {
                   />
                 </div>
               ),
+            },
+            {
+              key: 'cross-references',
+              label: 'Cross References',
+              children: <CrossReferenceTable itemId={id} />,
+            },
+            {
+              key: 'vehicle-compatibility',
+              label: 'Vehicle Compatibility',
+              children: <VehicleCompatibilityTable itemId={id} />,
+            },
+            {
+              key: 'supersession',
+              label: (
+                <span>
+                  <SwapOutlined style={{ marginRight: 4 }} />
+                  Supersession
+                  {supersessionData?.isSuperseded && (
+                    <Tag color="warning" bordered={false} style={{ marginLeft: 6, fontSize: 11 }}>
+                      Superseded
+                    </Tag>
+                  )}
+                </span>
+              ),
+              children: <SupersessionChain itemId={id} />,
             },
             {
               key: 'tracking',

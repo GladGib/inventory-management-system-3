@@ -64,6 +64,25 @@ model Organization {
   // Assembly
   assemblies Assembly[]
 
+  // Quotes
+  quotes Quote[]
+
+  // Portal
+  portalUsers PortalUser[]
+
+  // Banking
+  bankAccounts     BankAccount[]
+  bankTransactions BankTransaction[]
+
+  // Online Payments
+  onlinePayments OnlinePayment[]
+
+  // Audit Logs
+  auditLogs AuditLog[]
+
+  // Push Notifications
+  deviceTokens DeviceToken[]
+
   @@index([slug])
   @@index([status])
 }
@@ -115,6 +134,9 @@ model User {
   // Assembly
   createdAssemblies Assembly[] @relation("AssemblyCreatedBy")
 
+  // Push Notifications
+  deviceTokens DeviceToken[]
+
   @@index([organizationId])
   @@index([email])
   @@index([status])
@@ -129,6 +151,27 @@ model RefreshToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ============================================
+// PORTAL USERS (Customer Portal)
+// ============================================
+
+model PortalUser {
+  id             String       @id @default(uuid())
+  email          String
+  password       String
+  contactId      String
+  contact        Contact      @relation(fields: [contactId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  isActive       Boolean      @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([email, organizationId])
+  @@index([contactId])
 }
 
 // ============================================
@@ -162,6 +205,11 @@ model Item {
   trackBatches   Boolean @default(false)
   trackSerials   Boolean @default(false)
 
+  // Core item management (returnable parts like alternators, starters)
+  hasCore    Boolean @default(false)
+  coreCharge Decimal @default(0) @db.Decimal(15, 4)
+  coreItemId String? // Self-reference to the core item
+
   // Tax
   taxable   Boolean @default(true)
   taxRateId String?
@@ -182,14 +230,18 @@ model Item {
   taxRate      TaxRate?     @relation(fields: [taxRateId], references: [id])
   createdBy    User?        @relation("ItemCreatedBy", fields: [createdById], references: [id])
 
+  // Core item self-relation
+  coreItem Item?  @relation("CoreItem", fields: [coreItemId], references: [id])
+  coreFor  Item[] @relation("CoreItem")
+
   // Stock relations
   stockLevels   StockLevel[]
   batches       Batch[]
   serialNumbers SerialNumber[]
 
   // Composite item relations
-  compositeItem  CompositeItem?
-  componentOf    BOMComponent[]   @relation("ComponentItem")
+  compositeItem CompositeItem?
+  componentOf   BOMComponent[] @relation("ComponentItem")
 
   // Transaction relations
   salesOrderItems      SalesOrderItem[]
@@ -201,20 +253,73 @@ model Item {
   stockAdjustments     StockAdjustment[]       @relation("ItemAdjustments")
   transferItems        InventoryTransferItem[]
   salesReturnItems     SalesReturnItem[]
+  quoteItems           QuoteItem[]
 
   // Reorder & Forecast
-  reorderSettings  ItemReorderSettings[]
-  reorderAlerts    ReorderAlert[]
-  demandForecasts  DemandForecast[]
+  reorderSettings ItemReorderSettings[]
+  reorderAlerts   ReorderAlert[]
+  demandForecasts DemandForecast[]
 
   // Assembly
   assemblyItems AssemblyItem[]
+
+  // Core Returns
+  coreReturns CoreReturn[] @relation("CoreReturnItem")
+
+  // Cross-reference records
+  crossReferenceRecords CrossReference[]
+
+  // Bin/Location Management
+  binStocks BinStock[]
+
+  // Vehicle Compatibility
+  vehicleCompatibilities ItemVehicleCompatibility[]
+
+  // Supersession tracking
+  supersededBy PartSupersession[] @relation("SupersededItem")
+  supersedes   PartSupersession[] @relation("SupersedingItem")
 
   @@unique([organizationId, sku])
   @@index([organizationId])
   @@index([partNumber])
   @@index([status])
   @@index([categoryId])
+}
+
+model CrossReference {
+  id                String   @id @default(cuid())
+  itemId            String
+  oemNumber         String
+  aftermarketNumber String?
+  brand             String?
+  notes             String?
+  organizationId    String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([organizationId])
+  @@index([oemNumber])
+  @@index([aftermarketNumber])
+}
+
+model PartSupersession {
+  id             String   @id @default(cuid())
+  oldItemId      String
+  newItemId      String
+  effectiveDate  DateTime @default(now())
+  reason         String?
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  oldItem Item @relation("SupersededItem", fields: [oldItemId], references: [id])
+  newItem Item @relation("SupersedingItem", fields: [newItemId], references: [id])
+
+  @@index([oldItemId])
+  @@index([newItemId])
+  @@index([organizationId])
 }
 
 model ItemGroup {
@@ -298,6 +403,10 @@ model Warehouse {
   // Assembly
   assemblies Assembly[]
 
+  // Bin/Location Management
+  zones WarehouseZone[]
+  bins  Bin[]
+
   @@unique([organizationId, code])
   @@index([organizationId])
 }
@@ -321,25 +430,25 @@ model StockLevel {
 }
 
 model Batch {
-  id              String      @id @default(cuid())
-  itemId          String
-  warehouseId     String
-  batchNumber     String
-  manufactureDate DateTime?
-  expiryDate      DateTime?
-  quantity        Decimal     @default(0) @db.Decimal(15, 4)
-  initialQuantity Decimal     @default(0) @db.Decimal(15, 4)
-  status          BatchStatus @default(ACTIVE)
-  notes           String?
+  id                String      @id @default(cuid())
+  itemId            String
+  warehouseId       String
+  batchNumber       String
+  manufactureDate   DateTime?
+  expiryDate        DateTime?
+  quantity          Decimal     @default(0) @db.Decimal(15, 4)
+  initialQuantity   Decimal     @default(0) @db.Decimal(15, 4)
+  status            BatchStatus @default(ACTIVE)
+  notes             String?
   purchaseReceiveId String?
-  supplierId      String?
-  organizationId  String
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  supplierId        String?
+  organizationId    String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   // Relations
-  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item         Item               @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse          @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   transactions BatchTransaction[]
 
   @@unique([itemId, warehouseId, batchNumber])
@@ -351,16 +460,16 @@ model Batch {
 }
 
 model BatchTransaction {
-  id              String               @id @default(cuid())
-  batchId         String
-  batch           Batch                @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  type            BatchTransactionType
-  quantity        Decimal              @db.Decimal(15, 4)
-  referenceType   String?
-  referenceId     String?
-  notes           String?
-  createdById     String?
-  createdAt       DateTime             @default(now())
+  id            String               @id @default(cuid())
+  batchId       String
+  batch         Batch                @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  type          BatchTransactionType
+  quantity      Decimal              @db.Decimal(15, 4)
+  referenceType String?
+  referenceId   String?
+  notes         String?
+  createdById   String?
+  createdAt     DateTime             @default(now())
 
   @@index([batchId])
   @@index([referenceType, referenceId])
@@ -381,7 +490,7 @@ model SerialNumber {
   supplierId        String?
 
   // Sale info
-  saleDate     DateTime?
+  saleDate DateTime?
 
   // Warranty
   warrantyMonths    Int?
@@ -394,11 +503,11 @@ model SerialNumber {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  item      Item       @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
-  soldTo    Contact?   @relation(fields: [soldToId], references: [id])
-  history   SerialHistory[]
-  warrantyClaims WarrantyClaim[]
+  item                      Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse                 Warehouse?      @relation(fields: [warehouseId], references: [id])
+  soldTo                    Contact?        @relation(fields: [soldToId], references: [id])
+  history                   SerialHistory[]
+  warrantyClaims            WarrantyClaim[]
   replacementWarrantyClaims WarrantyClaim[] @relation("ReplacementSerial")
 
   @@unique([itemId, serialNumber])
@@ -409,9 +518,9 @@ model SerialNumber {
 }
 
 model SerialHistory {
-  id              String       @id @default(cuid())
+  id              String        @id @default(cuid())
   serialNumberId  String
-  serialNumber    SerialNumber @relation(fields: [serialNumberId], references: [id], onDelete: Cascade)
+  serialNumber    SerialNumber  @relation(fields: [serialNumberId], references: [id], onDelete: Cascade)
   action          SerialAction
   fromStatus      SerialStatus?
   toStatus        SerialStatus
@@ -421,34 +530,34 @@ model SerialHistory {
   referenceId     String?
   notes           String?
   createdById     String?
-  createdAt       DateTime     @default(now())
+  createdAt       DateTime      @default(now())
 
   @@index([serialNumberId])
   @@index([referenceType, referenceId])
 }
 
 model WarrantyClaim {
-  id               String       @id @default(cuid())
-  claimNumber      String       @unique
-  serialNumberId   String
-  serialNumber     SerialNumber @relation(fields: [serialNumberId], references: [id])
-  customerId       String
-  claimDate        DateTime
-  issueDescription String
-  status           ClaimStatus  @default(PENDING)
-  resolution       String?
-  resolvedDate     DateTime?
+  id                  String       @id @default(cuid())
+  claimNumber         String       @unique
+  serialNumberId      String
+  serialNumber        SerialNumber @relation(fields: [serialNumberId], references: [id])
+  customerId          String
+  claimDate           DateTime
+  issueDescription    String
+  status              ClaimStatus  @default(PENDING)
+  resolution          String?
+  resolvedDate        DateTime?
   replacementSerialId String?
-  organizationId   String
-  createdById      String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  organizationId      String
+  createdById         String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   // Relations
-  customer           Contact?      @relation("WarrantyCustomer", fields: [customerId], references: [id])
-  organization       Organization  @relation(fields: [organizationId], references: [id])
-  createdBy          User?         @relation("WarrantyClaimCreatedBy", fields: [createdById], references: [id])
-  replacementSerial  SerialNumber? @relation("ReplacementSerial", fields: [replacementSerialId], references: [id])
+  customer          Contact?      @relation("WarrantyCustomer", fields: [customerId], references: [id])
+  organization      Organization  @relation(fields: [organizationId], references: [id])
+  createdBy         User?         @relation("WarrantyClaimCreatedBy", fields: [createdById], references: [id])
+  replacementSerial SerialNumber? @relation("ReplacementSerial", fields: [replacementSerialId], references: [id])
 
   @@index([serialNumberId])
   @@index([organizationId])
@@ -550,13 +659,13 @@ model InventoryTransferItem {
 // ============================================
 
 model CompositeItem {
-  id              String         @id @default(cuid())
-  itemId          String         @unique
-  item            Item           @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  assemblyMethod  AssemblyMethod @default(MANUAL)
-  organizationId  String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  itemId         String         @unique
+  item           Item           @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  assemblyMethod AssemblyMethod @default(MANUAL)
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   // Relations
   components BOMComponent[]
@@ -596,9 +705,9 @@ model Assembly {
   updatedAt       DateTime       @updatedAt
 
   // Relations
-  warehouse    Warehouse    @relation(fields: [warehouseId], references: [id])
-  organization Organization @relation(fields: [organizationId], references: [id])
-  createdBy    User?        @relation("AssemblyCreatedBy", fields: [createdById], references: [id])
+  warehouse    Warehouse      @relation(fields: [warehouseId], references: [id])
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  createdBy    User?          @relation("AssemblyCreatedBy", fields: [createdById], references: [id])
   items        AssemblyItem[]
 
   @@index([compositeItemId])
@@ -626,25 +735,25 @@ model AssemblyItem {
 // ============================================
 
 model ItemReorderSettings {
-  id              String     @id @default(cuid())
-  itemId          String
-  warehouseId     String?
-  reorderLevel    Decimal    @db.Decimal(15, 4)
-  reorderQuantity Decimal    @db.Decimal(15, 4)
-  safetyStock     Decimal    @default(0) @db.Decimal(15, 4)
-  leadTimeDays    Int        @default(0)
+  id                String   @id @default(cuid())
+  itemId            String
+  warehouseId       String?
+  reorderLevel      Decimal  @db.Decimal(15, 4)
+  reorderQuantity   Decimal  @db.Decimal(15, 4)
+  safetyStock       Decimal  @default(0) @db.Decimal(15, 4)
+  leadTimeDays      Int      @default(0)
   preferredVendorId String?
-  autoReorder     Boolean    @default(false)
-  isActive        Boolean    @default(true)
-  organizationId  String
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  autoReorder       Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  organizationId    String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
-  item            Item          @relation(fields: [itemId], references: [id])
-  warehouse       Warehouse?    @relation(fields: [warehouseId], references: [id])
-  preferredVendor Contact?      @relation("PreferredVendor", fields: [preferredVendorId], references: [id])
-  organization    Organization  @relation(fields: [organizationId], references: [id])
+  item            Item         @relation(fields: [itemId], references: [id])
+  warehouse       Warehouse?   @relation(fields: [warehouseId], references: [id])
+  preferredVendor Contact?     @relation("PreferredVendor", fields: [preferredVendorId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([itemId, warehouseId])
   @@index([organizationId])
@@ -666,10 +775,10 @@ model ReorderAlert {
   createdAt       DateTime    @default(now())
 
   // Relations
-  item          Item            @relation(fields: [itemId], references: [id])
-  warehouse     Warehouse       @relation(fields: [warehouseId], references: [id])
-  purchaseOrder PurchaseOrder?  @relation(fields: [purchaseOrderId], references: [id])
-  organization  Organization    @relation(fields: [organizationId], references: [id])
+  item          Item           @relation(fields: [itemId], references: [id])
+  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  organization  Organization   @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([status])
@@ -677,22 +786,22 @@ model ReorderAlert {
 }
 
 model DemandForecast {
-  id              String         @id @default(cuid())
-  itemId          String
-  warehouseId     String?
-  period          DateTime
-  forecastQty     Decimal        @db.Decimal(15, 4)
-  actualQty       Decimal?       @db.Decimal(15, 4)
-  variance        Decimal?       @db.Decimal(15, 4)
-  confidence      Decimal?       @db.Decimal(5, 4)
-  method          ForecastMethod
-  organizationId  String
-  createdAt       DateTime       @default(now())
+  id             String         @id @default(cuid())
+  itemId         String
+  warehouseId    String?
+  period         DateTime
+  forecastQty    Decimal        @db.Decimal(15, 4)
+  actualQty      Decimal?       @db.Decimal(15, 4)
+  variance       Decimal?       @db.Decimal(15, 4)
+  confidence     Decimal?       @db.Decimal(5, 4)
+  method         ForecastMethod
+  organizationId String
+  createdAt      DateTime       @default(now())
 
   // Relations
-  item         Item          @relation(fields: [itemId], references: [id])
-  warehouse    Warehouse?    @relation(fields: [warehouseId], references: [id])
-  organization Organization  @relation(fields: [organizationId], references: [id])
+  item         Item         @relation(fields: [itemId], references: [id])
+  warehouse    Warehouse?   @relation(fields: [warehouseId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([itemId])
   @@index([organizationId])
@@ -738,6 +847,8 @@ model Contact {
   payments     Payment[]
   salesReturns SalesReturn[] @relation("SalesReturnCustomer")
   creditNotes  CreditNote[]  @relation("CreditNoteCustomer")
+  coreReturns  CoreReturn[]  @relation("CoreReturnCustomer")
+  quotes       Quote[]       @relation("QuoteCustomer")
 
   // Transaction relations (Vendor)
   purchaseOrders   PurchaseOrder[]
@@ -754,6 +865,9 @@ model Contact {
 
   // Reorder
   preferredVendorReorderSettings ItemReorderSettings[] @relation("PreferredVendor")
+
+  // Portal
+  portalUsers PortalUser[]
 
   @@index([organizationId])
   @@index([type])
@@ -903,6 +1017,7 @@ model Invoice {
   salesReturns           SalesReturn[]
   creditNoteApplications CreditNoteApplication[]
   eInvoiceSubmissions    EInvoiceSubmission[]
+  onlinePayments         OnlinePayment[]
 
   @@unique([organizationId, invoiceNumber])
   @@index([organizationId])
@@ -1008,13 +1123,13 @@ model PurchaseOrder {
   updatedAt       DateTime            @updatedAt
 
   // Relations
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  vendor       Contact             @relation(fields: [vendorId], references: [id])
-  warehouse    Warehouse?          @relation(fields: [warehouseId], references: [id])
-  createdBy    User?               @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
-  items        PurchaseOrderItem[]
-  bills        Bill[]
-  receives     PurchaseReceive[]
+  organization  Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vendor        Contact             @relation(fields: [vendorId], references: [id])
+  warehouse     Warehouse?          @relation(fields: [warehouseId], references: [id])
+  createdBy     User?               @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
+  items         PurchaseOrderItem[]
+  bills         Bill[]
+  receives      PurchaseReceive[]
   reorderAlerts ReorderAlert[]
 
   @@unique([organizationId, orderNumber])
@@ -1219,20 +1334,21 @@ model PurchaseReceiveItem {
 // ============================================
 
 model TaxRate {
-  id             String    @id @default(cuid())
+  id             String     @id @default(cuid())
   organizationId String
   name           String
   code           String // Tax code e.g., "ST10", "ST6", "ZR", "EX"
-  rate           Decimal   @db.Decimal(5, 2)
-  type           TaxType   @default(SST)
+  rate           Decimal    @db.Decimal(5, 2)
+  type           TaxType    @default(SST)
+  taxRegime      TaxRegime?
   description    String?
-  isDefault      Boolean   @default(false)
-  isActive       Boolean   @default(true)
-  status         Status    @default(ACTIVE)
+  isDefault      Boolean    @default(false)
+  isActive       Boolean    @default(true)
+  status         Status     @default(ACTIVE)
   effectiveFrom  DateTime?
   effectiveTo    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -1297,7 +1413,7 @@ model PriceList {
   updatedAt      DateTime      @updatedAt
 
   // Relations
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   contacts     Contact[]
   items        PriceListItem[]
 
@@ -1307,14 +1423,14 @@ model PriceList {
 }
 
 model PriceListItem {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   priceListId String
   priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
   itemId      String
-  customPrice Decimal  @db.Decimal(15, 4)
-  minQuantity Decimal  @default(1) @db.Decimal(15, 4)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  customPrice Decimal   @db.Decimal(15, 4)
+  minQuantity Decimal   @default(1) @db.Decimal(15, 4)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@unique([priceListId, itemId, minQuantity])
   @@index([priceListId])
@@ -1326,20 +1442,20 @@ model PriceListItem {
 // ============================================
 
 model EInvoiceSettings {
-  id                  String   @id @default(cuid())
-  organizationId      String   @unique
+  id                  String    @id @default(cuid())
+  organizationId      String    @unique
   tin                 String?
   brn                 String?
   clientId            String?
   clientSecret        String?
   certificatePath     String?
-  isProduction        Boolean  @default(false)
-  isEnabled           Boolean  @default(false)
-  autoSubmit          Boolean  @default(false)
+  isProduction        Boolean   @default(false)
+  isEnabled           Boolean   @default(false)
+  autoSubmit          Boolean   @default(false)
   lastConnectionCheck DateTime?
   connectionStatus    String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
@@ -1348,29 +1464,29 @@ model EInvoiceSettings {
 }
 
 model EInvoiceSubmission {
-  id                String          @id @default(cuid())
-  invoiceId         String
-  submissionUuid    String?
-  documentUuid      String?
-  longId            String?
-  status            EInvoiceStatus  @default(PENDING)
-  submittedAt       DateTime?
-  validatedAt       DateTime?
-  cancelledAt       DateTime?
-  rejectionReasons  Json?
-  qrCodeData        String?
-  qrCodeUrl         String?
-  rawRequest        Json?
-  rawResponse       Json?
-  retryCount        Int             @default(0)
-  lastError         String?
-  organizationId    String
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id               String         @id @default(cuid())
+  invoiceId        String
+  submissionUuid   String?
+  documentUuid     String?
+  longId           String?
+  status           EInvoiceStatus @default(PENDING)
+  submittedAt      DateTime?
+  validatedAt      DateTime?
+  cancelledAt      DateTime?
+  rejectionReasons Json?
+  qrCodeData       String?
+  qrCodeUrl        String?
+  rawRequest       Json?
+  rawResponse      Json?
+  retryCount       Int            @default(0)
+  lastError        String?
+  organizationId   String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   // Relations
-  invoice      Invoice          @relation(fields: [invoiceId], references: [id])
-  organization Organization     @relation(fields: [organizationId], references: [id])
+  invoice      Invoice            @relation(fields: [invoiceId], references: [id])
+  organization Organization       @relation(fields: [organizationId], references: [id])
   documents    EInvoiceDocument[]
 
   @@index([invoiceId])
@@ -1616,9 +1732,16 @@ enum BillStatus {
 enum TaxType {
   SST // Sales and Service Tax (10%)
   SERVICE_TAX // Service Tax (6%)
+  GST // Goods and Services Tax (historical, pre-2018)
   EXEMPT
   ZERO_RATED
   OUT_OF_SCOPE // Outside SST scope
+}
+
+enum TaxRegime {
+  GST // 1 Apr 2015 - 31 Aug 2018
+  TAX_HOLIDAY // 1 Sep 2018 - 31 Dec 2018
+  SST // 1 Jan 2019 - present
 }
 
 enum RoundingMethod {
@@ -1930,4 +2053,470 @@ enum VendorCreditStatus {
   PARTIALLY_APPLIED
   FULLY_APPLIED
   VOID
+}
+
+// ============================================
+// CORE RETURNS (Returnable Parts Management)
+// ============================================
+
+enum CoreReturnStatus {
+  PENDING
+  RECEIVED
+  CREDITED
+  REJECTED
+}
+
+model CoreReturn {
+  id             String           @id @default(cuid())
+  returnNumber   String           @unique
+  customerId     String
+  itemId         String
+  salesOrderId   String?
+  invoiceId      String?
+  coreCharge     Decimal          @db.Decimal(15, 2)
+  returnDate     DateTime?
+  dueDate        DateTime
+  status         CoreReturnStatus @default(PENDING)
+  notes          String?
+  organizationId String
+  createdById    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  customer Contact @relation("CoreReturnCustomer", fields: [customerId], references: [id])
+  item     Item    @relation("CoreReturnItem", fields: [itemId], references: [id])
+
+  @@index([customerId])
+  @@index([itemId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ============================================
+// SALES QUOTES
+// ============================================
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  EXPIRED
+  REJECTED
+  CONVERTED
+}
+
+model Quote {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  quoteNumber        String
+  customerId         String? // nullable for walk-in customers
+  contactPersonName  String?
+  quoteDate          DateTime     @default(now())
+  validUntil         DateTime
+  status             QuoteStatus  @default(DRAFT)
+  salesPersonId      String?
+  warehouseId        String?
+  referenceNumber    String?
+  subtotal           Decimal      @default(0) @db.Decimal(15, 2)
+  discountType       DiscountType @default(PERCENTAGE)
+  discountValue      Decimal      @default(0) @db.Decimal(15, 2)
+  discountAmount     Decimal      @default(0) @db.Decimal(15, 2)
+  taxAmount          Decimal      @default(0) @db.Decimal(15, 2)
+  total              Decimal      @default(0) @db.Decimal(15, 2)
+  notes              String?
+  termsConditions    String?
+  convertedToOrderId String?
+  createdById        String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Contact?     @relation("QuoteCustomer", fields: [customerId], references: [id])
+  items        QuoteItem[]
+
+  @@unique([organizationId, quoteNumber])
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([status])
+  @@index([quoteDate])
+}
+
+model QuoteItem {
+  id             String       @id @default(cuid())
+  quoteId        String
+  itemId         String
+  description    String?
+  quantity       Decimal      @db.Decimal(15, 4)
+  unit           String
+  rate           Decimal      @db.Decimal(15, 4)
+  discountType   DiscountType @default(PERCENTAGE)
+  discountValue  Decimal      @default(0) @db.Decimal(15, 2)
+  discountAmount Decimal      @default(0) @db.Decimal(15, 2)
+  taxRateId      String?
+  taxAmount      Decimal      @default(0) @db.Decimal(15, 2)
+  amount         Decimal      @db.Decimal(15, 2)
+  sortOrder      Int          @default(0)
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  item  Item  @relation(fields: [itemId], references: [id])
+
+  @@index([quoteId])
+  @@index([itemId])
+}
+
+// ============================================
+// BIN/LOCATION MANAGEMENT
+// ============================================
+
+enum BinType {
+  STORAGE
+  PICKING
+  RECEIVING
+  SHIPPING
+  STAGING
+}
+
+model WarehouseZone {
+  id             String   @id @default(cuid())
+  warehouseId    String
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  bins      Bin[]
+
+  @@unique([warehouseId, name])
+  @@index([warehouseId])
+  @@index([organizationId])
+}
+
+model Bin {
+  id              String   @id @default(cuid())
+  warehouseId     String
+  warehouseZoneId String?
+  code            String
+  name            String?
+  type            BinType  @default(STORAGE)
+  maxCapacity     Decimal? @db.Decimal(15, 4)
+  isActive        Boolean  @default(true)
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  warehouseZone WarehouseZone? @relation(fields: [warehouseZoneId], references: [id])
+  binStocks     BinStock[]
+
+  @@unique([warehouseId, code])
+  @@index([warehouseId])
+  @@index([warehouseZoneId])
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model BinStock {
+  id             String   @id @default(cuid())
+  binId          String
+  itemId         String
+  quantity       Decimal  @default(0) @db.Decimal(15, 4)
+  batchId        String?
+  organizationId String
+  updatedAt      DateTime @updatedAt
+
+  bin  Bin  @relation(fields: [binId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@unique([binId, itemId, batchId])
+  @@index([binId])
+  @@index([itemId])
+  @@index([organizationId])
+}
+
+// ============================================
+// VEHICLE COMPATIBILITY
+// ============================================
+
+model VehicleMake {
+  id             String   @id @default(cuid())
+  name           String
+  country        String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  models          VehicleModel[]
+  compatibilities ItemVehicleCompatibility[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model VehicleModel {
+  id             String   @id @default(cuid())
+  makeId         String
+  name           String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  make            VehicleMake                @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  compatibilities ItemVehicleCompatibility[]
+
+  @@unique([makeId, name])
+  @@index([makeId])
+  @@index([organizationId])
+}
+
+model ItemVehicleCompatibility {
+  id             String   @id @default(cuid())
+  itemId         String
+  vehicleMakeId  String
+  vehicleModelId String?
+  yearFrom       Int?
+  yearTo         Int?
+  notes          String?
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  item         Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  vehicleMake  VehicleMake   @relation(fields: [vehicleMakeId], references: [id])
+  vehicleModel VehicleModel? @relation(fields: [vehicleModelId], references: [id])
+
+  @@index([itemId])
+  @@index([vehicleMakeId])
+  @@index([vehicleModelId])
+  @@index([organizationId])
+}
+
+// ============================================
+// ACCOUNTING
+// ============================================
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+}
+
+model ChartOfAccount {
+  id             String      @id @default(cuid())
+  accountCode    String
+  name           String
+  type           AccountType
+  parentId       String?
+  isSystem       Boolean     @default(false)
+  isActive       Boolean     @default(true)
+  organizationId String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  parent            ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children          ChartOfAccount[]   @relation("AccountHierarchy")
+  journalEntryLines JournalEntryLine[]
+  accountMappings   AccountMapping[]
+
+  @@unique([organizationId, accountCode])
+  @@index([organizationId])
+  @@index([type])
+  @@index([parentId])
+}
+
+model JournalEntry {
+  id             String             @id @default(cuid())
+  entryNumber    String
+  date           DateTime
+  description    String
+  sourceType     String? // INVOICE, PAYMENT, BILL, ADJUSTMENT, MANUAL
+  sourceId       String?
+  status         JournalEntryStatus @default(DRAFT)
+  organizationId String
+  createdById    String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  lines JournalEntryLine[]
+
+  @@unique([organizationId, entryNumber])
+  @@index([organizationId])
+  @@index([date])
+  @@index([sourceType, sourceId])
+  @@index([status])
+}
+
+model JournalEntryLine {
+  id             String  @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debit          Decimal @default(0) @db.Decimal(15, 2)
+  credit         Decimal @default(0) @db.Decimal(15, 2)
+  description    String?
+
+  journalEntry JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+model AccountMapping {
+  id              String @id @default(cuid())
+  transactionType String // SALES, PURCHASE, PAYMENT_RECEIVED, PAYMENT_MADE, INVENTORY_ADJUSTMENT, TAX_OUTPUT, TAX_INPUT
+  accountId       String
+  organizationId  String
+
+  account ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@unique([organizationId, transactionType])
+  @@index([organizationId])
+}
+
+// ============================================
+// ONLINE PAYMENT GATEWAY
+// ============================================
+
+enum PaymentGateway {
+  FPX
+  DUITNOW
+  GRABPAY
+  TNG
+}
+
+enum OnlinePaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+model OnlinePayment {
+  id              String              @id @default(uuid())
+  gateway         PaymentGateway
+  status          OnlinePaymentStatus @default(PENDING)
+  amount          Decimal             @db.Decimal(15, 2)
+  currency        String              @default("MYR")
+  referenceNumber String              @unique
+  gatewayRef      String?
+  bankCode        String?
+  buyerEmail      String?
+  buyerName       String?
+  description     String?
+  callbackPayload Json?
+  errorMessage    String?
+  invoiceId       String?
+  invoice         Invoice?            @relation(fields: [invoiceId], references: [id])
+  organizationId  String
+  organization    Organization        @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  completedAt     DateTime?
+
+  @@index([organizationId])
+  @@index([referenceNumber])
+  @@index([invoiceId])
+}
+
+// ============================================
+// BANKING (Malaysian Bank Integration)
+// ============================================
+
+model BankAccount {
+  id             String            @id @default(uuid())
+  bankName       String
+  bankCode       String
+  accountNumber  String
+  accountName    String
+  accountType    String            @default("CURRENT") // CURRENT, SAVINGS
+  swiftCode      String?
+  isDefault      Boolean           @default(false)
+  isActive       Boolean           @default(true)
+  openingBalance Decimal           @default(0) @db.Decimal(15, 2)
+  currentBalance Decimal           @default(0) @db.Decimal(15, 2)
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  transactions   BankTransaction[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId])
+}
+
+model BankTransaction {
+  id              String       @id @default(uuid())
+  type            String // DEPOSIT, WITHDRAWAL, TRANSFER, FEE, INTEREST
+  amount          Decimal      @db.Decimal(15, 2)
+  date            DateTime
+  description     String?
+  reference       String?
+  reconciled      Boolean      @default(false)
+  reconciledAt    DateTime?
+  bankAccountId   String
+  bankAccount     BankAccount  @relation(fields: [bankAccountId], references: [id])
+  paymentId       String?
+  vendorPaymentId String?
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([bankAccountId])
+  @@index([organizationId])
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  action         String // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT, etc.
+  entityType     String // Item, SalesOrder, Invoice, etc.
+  entityId       String?
+  changes        Json? // { before: {}, after: {} }
+  userId         String?
+  userEmail      String?
+  ipAddress      String?
+  userAgent      String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// ============================================
+// DEVICE TOKENS (Push Notifications)
+// ============================================
+
+model DeviceToken {
+  id             String       @id @default(uuid())
+  token          String
+  platform       String // ios, android
+  deviceName     String?
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([token, userId])
+  @@index([userId])
+  @@index([organizationId])
 }

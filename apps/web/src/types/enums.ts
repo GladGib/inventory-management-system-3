@@ -205,9 +205,16 @@ export enum BillStatus {
 export enum TaxType {
   SST = 'SST',
   SERVICE_TAX = 'SERVICE_TAX',
+  GST = 'GST',
   EXEMPT = 'EXEMPT',
   ZERO_RATED = 'ZERO_RATED',
   OUT_OF_SCOPE = 'OUT_OF_SCOPE',
+}
+
+export enum TaxRegime {
+  GST = 'GST',
+  TAX_HOLIDAY = 'TAX_HOLIDAY',
+  SST = 'SST',
 }
 
 export enum RoundingMethod {
@@ -297,4 +304,32 @@ export enum VendorCreditStatus {
   PARTIALLY_APPLIED = 'PARTIALLY_APPLIED',
   FULLY_APPLIED = 'FULLY_APPLIED',
   VOID = 'VOID',
+}
+
+export enum CoreReturnStatus {
+  PENDING = 'PENDING',
+  RECEIVED = 'RECEIVED',
+  CREDITED = 'CREDITED',
+  REJECTED = 'REJECTED',
+}
+
+export enum BinType {
+  STORAGE = 'STORAGE',
+  PICKING = 'PICKING',
+  RECEIVING = 'RECEIVING',
+  SHIPPING = 'SHIPPING',
+  STAGING = 'STAGING',
+}
+
+export enum AccountType {
+  ASSET = 'ASSET',
+  LIABILITY = 'LIABILITY',
+  EQUITY = 'EQUITY',
+  REVENUE = 'REVENUE',
+  EXPENSE = 'EXPENSE',
+}
+
+export enum JournalEntryStatus {
+  DRAFT = 'DRAFT',
+  POSTED = 'POSTED',
 }

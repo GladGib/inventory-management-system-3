@@ -97,13 +97,31 @@ export function useConfirmSalesOrder() {
 
   return useMutation({
     mutationFn: (id: string) => salesService.confirmOrder(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: salesKeys.orderDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<SalesOrder>(salesKeys.orderDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<SalesOrder>(salesKeys.orderDetail(id), {
+          ...previousData,
+          status: 'CONFIRMED',
+        });
+      }
+      message.success('Sales order confirmed');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(salesKeys.orderDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to confirm sales order');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: salesKeys.orders() });
       queryClient.invalidateQueries({ queryKey: salesKeys.orderDetail(id) });
-      message.success('Sales order confirmed');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to confirm sales order');
     },
   });
 }
@@ -113,13 +131,31 @@ export function useShipSalesOrder() {
 
   return useMutation({
     mutationFn: (id: string) => salesService.shipOrder(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: salesKeys.orderDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<SalesOrder>(salesKeys.orderDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<SalesOrder>(salesKeys.orderDetail(id), {
+          ...previousData,
+          status: 'SHIPPED',
+        });
+      }
+      message.success('Sales order marked as shipped');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(salesKeys.orderDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to ship sales order');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: salesKeys.orders() });
       queryClient.invalidateQueries({ queryKey: salesKeys.orderDetail(id) });
-      message.success('Sales order marked as shipped');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to ship sales order');
     },
   });
 }
@@ -129,13 +165,31 @@ export function useCancelSalesOrder() {
 
   return useMutation({
     mutationFn: (id: string) => salesService.cancelOrder(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: salesKeys.orderDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<SalesOrder>(salesKeys.orderDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<SalesOrder>(salesKeys.orderDetail(id), {
+          ...previousData,
+          status: 'CANCELLED',
+        });
+      }
+      message.success('Sales order cancelled');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(salesKeys.orderDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to cancel sales order');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: salesKeys.orders() });
       queryClient.invalidateQueries({ queryKey: salesKeys.orderDetail(id) });
-      message.success('Sales order cancelled');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to cancel sales order');
     },
   });
 }

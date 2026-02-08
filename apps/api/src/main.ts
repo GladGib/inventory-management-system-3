@@ -4,7 +4,9 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { MonitoringService } from './modules/monitoring/monitoring.service';
+import { GlobalExceptionFilter } from './modules/monitoring/http-exception.filter';
+import { AuditInterceptor } from './modules/audit/audit.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,8 +26,13 @@ async function bootstrap() {
     prefix: 'api/v',
   });
 
-  // Global Exception Filter
-  app.useGlobalFilters(new AllExceptionsFilter());
+  // Global Exception Filter (with monitoring integration)
+  const monitoringService = app.get(MonitoringService);
+  app.useGlobalFilters(new GlobalExceptionFilter(monitoringService));
+
+  // Global Audit Interceptor (auto-captures mutations)
+  const auditInterceptor = app.get(AuditInterceptor);
+  app.useGlobalInterceptors(auditInterceptor);
 
   // Global Validation Pipe
   app.useGlobalPipes(
@@ -68,6 +75,9 @@ async function bootstrap() {
       .addTag('Contacts', 'Customer and vendor management')
       .addTag('Reports', 'Reports and analytics')
       .addTag('Settings', 'System settings and configuration')
+      .addTag('Audit', 'Audit log endpoints')
+      .addTag('Backup', 'Backup and restore endpoints')
+      .addTag('Health', 'Health check endpoints')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

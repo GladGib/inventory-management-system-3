@@ -7,7 +7,9 @@ import {
   Body,
   Param,
   Query,
+  Res,
   UseGuards,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { SalesService } from './sales.service';
 import { CreateSalesOrderDto, UpdateSalesOrderDto } from './dto/create-sales-order.dto';
 import { CreateInvoiceDto, CreateInvoiceFromOrderDto } from './dto/create-invoice.dto';
@@ -266,5 +269,45 @@ export class SalesController {
     @CurrentUser('organizationId') organizationId: string
   ) {
     return this.salesService.getPayment(id, organizationId);
+  }
+
+  // ============ PDF Downloads ============
+
+  @Get('orders/:id/pdf')
+  @ApiOperation({ summary: 'Download sales order as PDF' })
+  @ApiResponse({ status: 200, description: 'PDF file' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ms'], description: 'Document language (default: en)' })
+  async downloadSalesOrderPdf(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('locale') locale?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    const buffer = await this.salesService.generateSalesOrderPdf(id, organizationId, locale);
+    const filename = `sales-order-${id}.pdf`;
+
+    res!.setHeader('Content-Type', 'application/pdf');
+    res!.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    return new StreamableFile(buffer);
+  }
+
+  @Get('invoices/:id/pdf')
+  @ApiOperation({ summary: 'Download invoice as PDF' })
+  @ApiResponse({ status: 200, description: 'PDF file' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ms'], description: 'Document language (default: en)' })
+  async downloadInvoicePdf(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('locale') locale?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    const buffer = await this.salesService.generateInvoicePdf(id, organizationId, locale);
+    const filename = `invoice-${id}.pdf`;
+
+    res!.setHeader('Content-Type', 'application/pdf');
+    res!.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    return new StreamableFile(buffer);
   }
 }

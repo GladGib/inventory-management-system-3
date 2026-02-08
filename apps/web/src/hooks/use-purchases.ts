@@ -99,13 +99,31 @@ export function useIssuePurchaseOrder() {
 
   return useMutation({
     mutationFn: (id: string) => purchasesService.issueOrder(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: purchaseKeys.orderDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<PurchaseOrder>(purchaseKeys.orderDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<PurchaseOrder>(purchaseKeys.orderDetail(id), {
+          ...previousData,
+          status: 'ISSUED',
+        });
+      }
+      message.success('Purchase order issued');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(purchaseKeys.orderDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to issue purchase order');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: purchaseKeys.orders() });
       queryClient.invalidateQueries({ queryKey: purchaseKeys.orderDetail(id) });
-      message.success('Purchase order issued');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to issue purchase order');
     },
   });
 }
@@ -115,13 +133,31 @@ export function useCancelPurchaseOrder() {
 
   return useMutation({
     mutationFn: (id: string) => purchasesService.cancelOrder(id),
-    onSuccess: (_, id) => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: purchaseKeys.orderDetail(id) });
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<PurchaseOrder>(purchaseKeys.orderDetail(id));
+      // Optimistically update status
+      if (previousData) {
+        queryClient.setQueryData<PurchaseOrder>(purchaseKeys.orderDetail(id), {
+          ...previousData,
+          status: 'CANCELLED',
+        });
+      }
+      message.success('Purchase order cancelled');
+      return { previousData };
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }, id, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(purchaseKeys.orderDetail(id), context.previousData);
+      }
+      message.error(error.response?.data?.message || 'Failed to cancel purchase order');
+    },
+    onSettled: (_, __, id) => {
       queryClient.invalidateQueries({ queryKey: purchaseKeys.orders() });
       queryClient.invalidateQueries({ queryKey: purchaseKeys.orderDetail(id) });
-      message.success('Purchase order cancelled');
-    },
-    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
-      message.error(error.response?.data?.message || 'Failed to cancel purchase order');
     },
   });
 }

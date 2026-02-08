@@ -6,7 +6,9 @@ import {
   Body,
   Param,
   Query,
+  Res,
   UseGuards,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { PurchasesService } from './purchases.service';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { CreateReceiveDto } from './dto/create-receive.dto';
@@ -262,5 +265,45 @@ export class PurchasesController {
       page: page ? parseInt(page) : undefined,
       limit: limit ? parseInt(limit) : undefined,
     });
+  }
+
+  // ============ PDF Downloads ============
+
+  @Get('orders/:id/pdf')
+  @ApiOperation({ summary: 'Download purchase order as PDF' })
+  @ApiResponse({ status: 200, description: 'PDF file' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ms'], description: 'Document language (default: en)' })
+  async downloadPurchaseOrderPdf(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('locale') locale?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    const buffer = await this.purchasesService.generatePurchaseOrderPdf(id, organizationId, locale);
+    const filename = `purchase-order-${id}.pdf`;
+
+    res!.setHeader('Content-Type', 'application/pdf');
+    res!.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    return new StreamableFile(buffer);
+  }
+
+  @Get('bills/:id/pdf')
+  @ApiOperation({ summary: 'Download bill as PDF' })
+  @ApiResponse({ status: 200, description: 'PDF file' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['en', 'ms'], description: 'Document language (default: en)' })
+  async downloadBillPdf(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('locale') locale?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    const buffer = await this.purchasesService.generateBillPdf(id, organizationId, locale);
+    const filename = `bill-${id}.pdf`;
+
+    res!.setHeader('Content-Type', 'application/pdf');
+    res!.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    return new StreamableFile(buffer);
   }
 }

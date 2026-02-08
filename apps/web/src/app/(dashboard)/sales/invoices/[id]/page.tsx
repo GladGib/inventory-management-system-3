@@ -26,6 +26,7 @@ import {
   CloseOutlined,
   DollarOutlined,
   ExclamationCircleOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 import { useInvoice, useSendInvoice, useVoidInvoice } from '@/hooks/use-sales';
 import { LineItemsTable, LineItem, OrderSummary } from '@/components/sales';
@@ -154,9 +155,13 @@ export default function InvoiceDetailPage({ params }: PageProps) {
 
     if (['SENT', 'PARTIALLY_PAID', 'OVERDUE'].includes(invoice.status)) {
       buttons.push(
+        <Link key="pay-online" href={`/sales/invoices/${id}/pay`}>
+          <Button type="primary" icon={<BankOutlined />}>
+            Pay Online (FPX)
+          </Button>
+        </Link>,
         <Button
           key="payment"
-          type="primary"
           icon={<DollarOutlined />}
           onClick={handleRecordPayment}
         >

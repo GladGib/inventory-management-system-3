@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Row, Col, Skeleton } from 'antd';
+import { Row, Col } from 'antd';
 import { DashboardWidget } from './DashboardWidget';
 import { DashboardToolbar } from './DashboardToolbar';
 import { WidgetDrawer } from './WidgetDrawer';
 import { getWidgetDefinition } from './widget-registry';
+import { CardSkeleton } from '@/components/skeletons';
 import {
   useDashboardLayout,
   useSaveDashboardLayout,
@@ -200,17 +201,7 @@ export function DashboardGrid() {
   }, [editMode, hasChanges, handleSaveLayout]);
 
   if (isLoading) {
-    return (
-      <div>
-        <Row gutter={[24, 24]}>
-          {[1, 2, 3, 4].map((i) => (
-            <Col key={i} xs={24} sm={12} lg={6}>
-              <Skeleton active paragraph={{ rows: 2 }} />
-            </Col>
-          ))}
-        </Row>
-      </div>
-    );
+    return <CardSkeleton count={4} />;
   }
 
   return (

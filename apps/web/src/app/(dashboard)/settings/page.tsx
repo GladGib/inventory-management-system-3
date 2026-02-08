@@ -308,6 +308,89 @@ function TaxSettingsTab() {
   );
 }
 
+const documentLanguages = [
+  { value: 'en', label: 'English' },
+  { value: 'ms', label: 'Bahasa Malaysia' },
+];
+
+function DocumentSettingsTab() {
+  const [form] = Form.useForm();
+  const queryClient = useQueryClient();
+
+  const { data: settings } = useQuery({
+    queryKey: ['organization-settings'],
+    queryFn: async () => {
+      const response = await api.get('/organizations/current/settings');
+      return response.data;
+    },
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const response = await api.put('/organizations/current/settings', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organization-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['organization'] });
+      message.success('Document settings saved successfully');
+    },
+    onError: () => {
+      message.error('Failed to save document settings');
+    },
+  });
+
+  useEffect(() => {
+    if (settings) {
+      form.setFieldsValue({
+        documentLanguage: settings.documentLanguage || 'en',
+      });
+    }
+  }, [settings, form]);
+
+  const onFinish = (values: Record<string, unknown>) => {
+    updateSettingsMutation.mutate(values);
+  };
+
+  return (
+    <div style={{ maxWidth: 600 }}>
+      <Form form={form} layout="vertical" onFinish={onFinish}>
+        <Title level={5}>Document Settings</Title>
+        <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+          Configure default settings for generated PDF documents such as invoices,
+          sales orders, purchase orders, and bills.
+        </Text>
+
+        <Form.Item
+          name="documentLanguage"
+          label="Default Document Language"
+          extra="This sets the default language for PDF documents. You can also choose a language when downloading individual documents."
+        >
+          <Select options={documentLanguages} style={{ width: 300 }} />
+        </Form.Item>
+
+        <Alert
+          type="info"
+          message="Bilingual Support"
+          description="Documents can be generated in English or Bahasa Malaysia (BM). All labels, headings, and status text will be translated. User-entered content (notes, terms, item names) will remain as entered."
+          style={{ marginBottom: 24 }}
+        />
+
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<SaveOutlined />}
+            loading={updateSettingsMutation.isPending}
+          >
+            Save Document Settings
+          </Button>
+        </Form.Item>
+      </Form>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const items = [
     {
@@ -331,14 +414,9 @@ export default function SettingsPage() {
       ),
     },
     {
-      key: 'templates',
-      label: 'Templates',
-      children: (
-        <div>
-          <Title level={5}>Document Templates</Title>
-          <Text type="secondary">Customize invoice and document templates. Coming soon.</Text>
-        </div>
-      ),
+      key: 'documents',
+      label: 'Documents',
+      children: <DocumentSettingsTab />,
     },
   ];
 

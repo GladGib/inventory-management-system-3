@@ -7,6 +7,7 @@ import { SearchOutlined, FilterOutlined, DownloadOutlined } from '@ant-design/ic
 import type { TableColumnsType } from 'antd';
 import { useStockLevels, useWarehouses } from '@/hooks/use-inventory';
 import { StockLevel, StockQueryParams } from '@/lib/inventory';
+import { TableSkeleton } from '@/components/skeletons';
 
 const { Title } = Typography;
 
@@ -120,6 +121,29 @@ export default function InventoryPage() {
       },
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Stock Summary
+          </Title>
+          <Button icon={<DownloadOutlined />}>Export</Button>
+        </div>
+        <Card>
+          <TableSkeleton rows={10} columns={9} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>

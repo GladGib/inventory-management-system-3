@@ -4,6 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { PdfService, PurchaseOrderPdfData, BillPdfData } from '@/modules/common/pdf';
+import { DocumentLocale } from '@/common/i18n/document-translations';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { CreateReceiveDto } from './dto/create-receive.dto';
 import { CreateBillDto, CreateBillFromPODto } from './dto/create-bill.dto';
@@ -11,7 +13,10 @@ import { CreateVendorPaymentDto } from './dto/create-payment.dto';
 
 @Injectable()
 export class PurchasesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfService: PdfService,
+  ) {}
 
   // ============ Purchase Orders ============
 
@@ -811,5 +816,170 @@ export class PurchasesService {
       data: payments,
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  // ============ PDF Generation ============
+
+  private async getOrganizationForPdf(organizationId: string) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    return {
+      name: org.name,
+      address: org.address as any,
+      phone: org.phone || undefined,
+      email: org.email || undefined,
+      website: org.website || undefined,
+      sstNumber: org.sstNumber || undefined,
+      businessRegNo: org.businessRegNo || undefined,
+      tin: org.tin || undefined,
+      logoUrl: org.logoUrl || undefined,
+    };
+  }
+
+  private getDocumentLocale(organization: any, requestedLocale?: string): DocumentLocale {
+    if (requestedLocale === 'ms' || requestedLocale === 'en') {
+      return requestedLocale;
+    }
+    const settings = organization.settings as Record<string, unknown> | null;
+    if (settings?.documentLanguage === 'ms') return 'ms';
+    return 'en';
+  }
+
+  async generatePurchaseOrderPdf(
+    id: string,
+    organizationId: string,
+    locale?: string,
+  ): Promise<Buffer> {
+    const order = await this.prisma.purchaseOrder.findFirst({
+      where: { id, organizationId },
+      include: {
+        vendor: true,
+        items: {
+          include: { item: { select: { sku: true, name: true, unit: true } } },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!order) throw new NotFoundException('Purchase order not found');
+
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    const organization = await this.getOrganizationForPdf(organizationId);
+    const resolvedLocale = this.getDocumentLocale(org, locale);
+
+    const vendor = order.vendor;
+    const pdfData: PurchaseOrderPdfData = {
+      organization,
+      documentNumber: order.orderNumber,
+      orderDate: order.orderDate.toISOString(),
+      expectedDate: order.expectedDate?.toISOString(),
+      vendor: {
+        displayName: vendor.displayName,
+        companyName: vendor.companyName || undefined,
+        email: vendor.email || undefined,
+        phone: vendor.phone || undefined,
+        taxNumber: vendor.taxNumber || undefined,
+        billingAddress: vendor.billingAddress as any,
+        shippingAddress: vendor.shippingAddress as any,
+      },
+      items: order.items.map((item) => ({
+        sku: item.item?.sku || undefined,
+        name: item.item?.name || item.description || '',
+        description: item.description || undefined,
+        quantity: Number(item.quantity),
+        unit: item.unit || item.item?.unit || 'PCS',
+        unitPrice: Number(item.unitPrice),
+        discountPercent: item.discountType === 'PERCENTAGE' ? Number(item.discountPercent) : undefined,
+        discountAmount: Number(item.discountAmount),
+        taxAmount: Number(item.taxAmount),
+        amount: Number(item.total),
+      })),
+      subtotal: Number(order.subtotal),
+      discountAmount: Number(order.discountAmount),
+      shippingCharges: Number(order.shippingCharges),
+      taxAmount: Number(order.taxAmount),
+      total: Number(order.total),
+      notes: order.notes || undefined,
+      termsConditions: order.termsConditions || undefined,
+      status: order.status,
+    };
+
+    return this.pdfService.generatePurchaseOrderPdf(pdfData, resolvedLocale);
+  }
+
+  async generateBillPdf(
+    id: string,
+    organizationId: string,
+    locale?: string,
+  ): Promise<Buffer> {
+    const bill = await this.prisma.bill.findFirst({
+      where: { id, organizationId },
+      include: {
+        vendor: true,
+        items: {
+          include: { item: { select: { sku: true, name: true, unit: true } } },
+          orderBy: { sortOrder: 'asc' },
+        },
+        purchaseOrder: { select: { orderNumber: true } },
+      },
+    });
+
+    if (!bill) throw new NotFoundException('Bill not found');
+
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    const organization = await this.getOrganizationForPdf(organizationId);
+    const resolvedLocale = this.getDocumentLocale(org, locale);
+
+    const vendor = bill.vendor;
+    const isPaid = Number(bill.balance) <= 0;
+
+    const pdfData: BillPdfData = {
+      organization,
+      documentNumber: bill.billNumber,
+      vendorBillNumber: bill.vendorBillNumber || undefined,
+      billDate: bill.billDate.toISOString(),
+      dueDate: bill.dueDate.toISOString(),
+      vendor: {
+        displayName: vendor.displayName,
+        companyName: vendor.companyName || undefined,
+        email: vendor.email || undefined,
+        phone: vendor.phone || undefined,
+        taxNumber: vendor.taxNumber || undefined,
+        billingAddress: vendor.billingAddress as any,
+      },
+      items: bill.items.map((item: any) => ({
+        sku: item.item?.sku || undefined,
+        name: item.item?.name || item.description || '',
+        description: item.description || undefined,
+        quantity: Number(item.quantity),
+        unit: item.item?.unit || 'PCS',
+        unitPrice: Number(item.unitPrice),
+        taxAmount: Number(item.taxAmount),
+        amount: Number(item.total),
+      })),
+      subtotal: Number(bill.subtotal),
+      discountAmount: Number(bill.discountAmount),
+      taxAmount: Number(bill.taxAmount),
+      total: Number(bill.total),
+      amountPaid: Number(bill.amountPaid),
+      balance: Number(bill.balance),
+      isPaid,
+      notes: bill.notes || undefined,
+      status: bill.status,
+      purchaseOrderNumber: bill.purchaseOrder?.orderNumber || undefined,
+    };
+
+    return this.pdfService.generateBillPdf(pdfData, resolvedLocale);
   }
 }

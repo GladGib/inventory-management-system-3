@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { CreateTaxRateDto, UpdateTaxRateDto, MALAYSIAN_TAX_RATES } from './dto/create-tax-rate.dto';
+import { CreateTaxRateDto, UpdateTaxRateDto, MALAYSIAN_TAX_RATES, TaxRegime } from './dto/create-tax-rate.dto';
 import { UpdateOrganizationTaxSettingsDto } from './dto/organization-tax-settings.dto';
 
 export interface TaxCalculationResult {
@@ -57,6 +57,7 @@ export class TaxService {
         code: dto.code,
         rate: dto.rate,
         type: dto.type,
+        taxRegime: dto.taxRegime ?? null,
         description: dto.description,
         isDefault: dto.isDefault ?? false,
         isActive: dto.isActive ?? true,
@@ -175,6 +176,7 @@ export class TaxService {
         ...(dto.code !== undefined && { code: dto.code }),
         ...(dto.rate !== undefined && { rate: dto.rate }),
         ...(dto.type !== undefined && { type: dto.type }),
+        ...(dto.taxRegime !== undefined && { taxRegime: dto.taxRegime || null }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
@@ -402,6 +404,127 @@ export class TaxService {
       taxRateName: taxRate.name,
       taxRateCode: taxRate.code,
     };
+  }
+
+  // ============ Date-Aware Tax Rate Resolution ============
+
+  /**
+   * Returns the effective tax rate for a given tax rate ID and transaction date.
+   * If the transaction date falls outside the rate's effectiveFrom/effectiveTo range,
+   * it attempts to find an alternative rate in the same organization that covers
+   * that date (matching by tax type). If no matching rate is found, returns rate 0.
+   */
+  async getEffectiveTaxRate(
+    taxRateId: string,
+    transactionDate: Date,
+    organizationId?: string,
+  ): Promise<{
+    taxRateId: string;
+    name: string;
+    code: string;
+    rate: number;
+    type: string;
+    taxRegime: string | null;
+    isWithinEffectivePeriod: boolean;
+  }> {
+    const taxRate = await this.prisma.taxRate.findUnique({
+      where: { id: taxRateId },
+    });
+
+    if (!taxRate) {
+      throw new NotFoundException(`Tax rate with ID "${taxRateId}" not found`);
+    }
+
+    const orgId = organizationId ?? taxRate.organizationId;
+
+    // Check if transactionDate falls within the effective period
+    const afterStart = !taxRate.effectiveFrom || transactionDate >= taxRate.effectiveFrom;
+    const beforeEnd = !taxRate.effectiveTo || transactionDate <= taxRate.effectiveTo;
+    const isWithinEffectivePeriod = afterStart && beforeEnd;
+
+    if (isWithinEffectivePeriod) {
+      return {
+        taxRateId: taxRate.id,
+        name: taxRate.name,
+        code: taxRate.code,
+        rate: Number(taxRate.rate),
+        type: taxRate.type,
+        taxRegime: taxRate.taxRegime,
+        isWithinEffectivePeriod: true,
+      };
+    }
+
+    // Outside effective period -- try to find an alternative rate for the same
+    // organization and tax type that covers the transaction date.
+    const alternativeRate = await this.prisma.taxRate.findFirst({
+      where: {
+        organizationId: orgId,
+        type: taxRate.type,
+        isActive: true,
+        status: 'ACTIVE',
+        id: { not: taxRateId },
+        OR: [
+          {
+            effectiveFrom: { lte: transactionDate },
+            effectiveTo: { gte: transactionDate },
+          },
+          {
+            effectiveFrom: { lte: transactionDate },
+            effectiveTo: null,
+          },
+          {
+            effectiveFrom: null,
+            effectiveTo: { gte: transactionDate },
+          },
+          {
+            effectiveFrom: null,
+            effectiveTo: null,
+          },
+        ],
+      },
+      orderBy: { effectiveFrom: 'desc' },
+    });
+
+    if (alternativeRate) {
+      return {
+        taxRateId: alternativeRate.id,
+        name: alternativeRate.name,
+        code: alternativeRate.code,
+        rate: Number(alternativeRate.rate),
+        type: alternativeRate.type,
+        taxRegime: alternativeRate.taxRegime,
+        isWithinEffectivePeriod: false,
+      };
+    }
+
+    // No alternative found -- return the original rate with 0% to indicate
+    // the tax rate was not applicable on the transaction date.
+    return {
+      taxRateId: taxRate.id,
+      name: taxRate.name,
+      code: taxRate.code,
+      rate: 0,
+      type: taxRate.type,
+      taxRegime: taxRate.taxRegime,
+      isWithinEffectivePeriod: false,
+    };
+  }
+
+  /**
+   * Determines the applicable Malaysian tax regime for a given date.
+   */
+  getTaxRegimeForDate(date: Date): string {
+    const gstStart = new Date('2015-04-01T00:00:00.000Z');
+    const gstEnd = new Date('2018-08-31T23:59:59.999Z');
+    const holidayEnd = new Date('2018-12-31T23:59:59.999Z');
+
+    if (date >= gstStart && date <= gstEnd) {
+      return 'GST';
+    }
+    if (date > gstEnd && date <= holidayEnd) {
+      return 'TAX_HOLIDAY';
+    }
+    return 'SST';
   }
 
   // ============ Malaysian SST Utilities ============

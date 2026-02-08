@@ -42,6 +42,10 @@ import type {
   ItemCondition,
   CreditNoteStatus,
   VendorCreditStatus,
+  CoreReturnStatus,
+  BinType,
+  AccountType,
+  JournalEntryStatus,
 } from './enums';
 
 // ============================================
@@ -111,6 +115,9 @@ export interface Item {
   trackInventory: boolean;
   trackBatches: boolean;
   trackSerials: boolean;
+  hasCore: boolean;
+  coreCharge: number;
+  coreItemId?: string | null;
   taxable: boolean;
   taxRateId?: string | null;
   images: string[];
@@ -124,6 +131,20 @@ export interface Item {
   itemGroup?: ItemGroup;
   taxRate?: TaxRate;
   stockLevels?: StockLevel[];
+  supersededBy?: PartSupersession[];
+  supersedes?: PartSupersession[];
+}
+
+export interface PartSupersession {
+  id: string;
+  oldItemId: string;
+  newItemId: string;
+  effectiveDate: string;
+  reason?: string | null;
+  organizationId: string;
+  createdAt: string;
+  oldItem?: Item;
+  newItem?: Item;
 }
 
 export interface ItemGroup {
@@ -816,6 +837,7 @@ export interface TaxRate {
   code: string;
   rate: number;
   type: TaxType;
+  taxRegime?: string | null;
   description?: string | null;
   isDefault: boolean;
   isActive: boolean;
@@ -1103,6 +1125,31 @@ export interface VendorCreditApplication {
 }
 
 // ============================================
+// CORE RETURNS
+// ============================================
+
+export interface CoreReturn {
+  id: string;
+  returnNumber: string;
+  customerId: string;
+  itemId: string;
+  salesOrderId?: string | null;
+  invoiceId?: string | null;
+  coreCharge: number;
+  returnDate?: string | null;
+  dueDate: string;
+  status: CoreReturnStatus;
+  notes?: string | null;
+  organizationId: string;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+
+  customer?: Contact;
+  item?: Item;
+}
+
+// ============================================
 // E-INVOICE DOCUMENTS
 // ============================================
 
@@ -1127,4 +1174,161 @@ export interface UserDashboardLayout {
   settings: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+}
+
+// ============================================
+// BIN/LOCATION MANAGEMENT
+// ============================================
+
+export interface WarehouseZone {
+  id: string;
+  warehouseId: string;
+  name: string;
+  description?: string | null;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    bins: number;
+  };
+}
+
+export interface Bin {
+  id: string;
+  warehouseId: string;
+  warehouseZoneId?: string | null;
+  code: string;
+  name?: string | null;
+  type: BinType;
+  maxCapacity?: number | null;
+  isActive: boolean;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+  warehouseZone?: { id: string; name: string } | null;
+  totalQuantity?: number;
+  itemCount?: number;
+}
+
+export interface BinStock {
+  id: string;
+  binId: string;
+  itemId: string;
+  quantity: number;
+  batchId?: string | null;
+  updatedAt: string;
+  item?: {
+    id: string;
+    sku: string;
+    name: string;
+    unit: string;
+    costPrice: number;
+  };
+  bin?: {
+    id: string;
+    code: string;
+    name?: string | null;
+  };
+}
+
+export interface BinStockDetail {
+  bin: {
+    id: string;
+    code: string;
+    name?: string | null;
+    type: BinType;
+    maxCapacity: number | null;
+    isActive: boolean;
+    warehouseId: string;
+    warehouseZoneId?: string | null;
+  };
+  stocks: BinStock[];
+  totalQuantity: number;
+  totalItems: number;
+}
+
+// ============================================
+// ACCOUNTING
+// ============================================
+
+export interface ChartOfAccount {
+  id: string;
+  accountCode: string;
+  name: string;
+  type: AccountType;
+  parentId?: string | null;
+  isSystem: boolean;
+  isActive: boolean;
+  organizationId: string;
+  createdAt: string;
+  updatedAt: string;
+
+  parent?: { id: string; accountCode: string; name: string } | null;
+  children?: ChartOfAccount[];
+  _count?: { journalEntryLines: number };
+}
+
+export interface JournalEntryLine {
+  id: string;
+  journalEntryId: string;
+  accountId: string;
+  debit: number;
+  credit: number;
+  description?: string | null;
+
+  account?: {
+    id: string;
+    accountCode: string;
+    name: string;
+    type: AccountType;
+  };
+}
+
+export interface JournalEntry {
+  id: string;
+  entryNumber: string;
+  date: string;
+  description: string;
+  sourceType?: string | null;
+  sourceId?: string | null;
+  status: JournalEntryStatus;
+  organizationId: string;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+
+  lines?: JournalEntryLine[];
+}
+
+export interface AccountMapping {
+  id: string;
+  transactionType: string;
+  accountId: string;
+  organizationId: string;
+
+  account?: {
+    id: string;
+    accountCode: string;
+    name: string;
+    type: AccountType;
+  };
+}
+
+export interface TrialBalanceRow {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: AccountType;
+  totalDebit: number;
+  totalCredit: number;
+}
+
+export interface TrialBalanceReport {
+  asOfDate: string;
+  accounts: TrialBalanceRow[];
+  totals: {
+    totalDebit: number;
+    totalCredit: number;
+    isBalanced: boolean;
+  };
 }

@@ -15,14 +15,14 @@
         {{#ifExists organization.address.country}}<br>{{organization.address.country}}{{/ifExists}}
       </p>
       {{/ifExists}}
-      {{#ifExists organization.phone}}<p>Tel: {{organization.phone}}</p>{{/ifExists}}
-      {{#ifExists organization.email}}<p>Email: {{organization.email}}</p>{{/ifExists}}
-      {{#ifExists organization.website}}<p>Web: {{organization.website}}</p>{{/ifExists}}
+      {{#ifExists organization.phone}}<p>{{t 'tel'}}: {{organization.phone}}</p>{{/ifExists}}
+      {{#ifExists organization.email}}<p>{{t 'emailLabel'}}: {{organization.email}}</p>{{/ifExists}}
+      {{#ifExists organization.website}}<p>{{t 'web'}}: {{organization.website}}</p>{{/ifExists}}
     </div>
     <div class="registration-info">
-      {{#ifExists organization.businessRegNo}}<span>Reg No: {{organization.businessRegNo}}</span>{{/ifExists}}
-      {{#ifExists organization.sstNumber}}<span>SST No: {{organization.sstNumber}}</span>{{/ifExists}}
-      {{#ifExists organization.tin}}<span>TIN: {{organization.tin}}</span>{{/ifExists}}
+      {{#ifExists organization.businessRegNo}}<span>{{t 'regNo'}}: {{organization.businessRegNo}}</span>{{/ifExists}}
+      {{#ifExists organization.sstNumber}}<span>{{t 'sstNo'}}: {{organization.sstNumber}}</span>{{/ifExists}}
+      {{#ifExists organization.tin}}<span>{{t 'tinLabel'}}: {{organization.tin}}</span>{{/ifExists}}
     </div>
   </div>
   <div class="document-title-section">

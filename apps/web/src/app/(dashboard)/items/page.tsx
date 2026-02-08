@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -30,9 +30,15 @@ import {
   CopyOutlined,
   ExclamationCircleOutlined,
   WarningOutlined,
+  SwapOutlined,
+  PrinterOutlined,
 } from '@ant-design/icons';
-import { useItems, useDeleteItem } from '@/hooks/use-items';
-import { Item, ItemStatus, ItemType, ItemQueryParams } from '@/lib/items';
+import { useItems, useDeleteItem, useSearchByPartNumber } from '@/hooks/use-items';
+import { useVehicleSearch } from '@/hooks/use-vehicles';
+import { Item, ItemStatus, ItemType, ItemQueryParams, PartNumberSearchResult } from '@/lib/items';
+import { VehicleSearchFilter } from '@/components/items/VehicleSearchFilter';
+import { BarcodeLabelPrint } from '@/components/items/BarcodeLabelPrint';
+import { TableSkeleton } from '@/components/skeletons';
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -40,6 +46,15 @@ const { confirm } = Modal;
 export default function ItemsPage() {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
+  const [partNumberSearchMode, setPartNumberSearchMode] = useState(false);
+  const [partNumberQuery, setPartNumberQuery] = useState('');
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
+  const [vehicleFilters, setVehicleFilters] = useState<{
+    makeId?: string;
+    modelId?: string;
+    year?: number;
+  }>({});
   const [filters, setFilters] = useState<ItemQueryParams>({
     page: 1,
     limit: 25,
@@ -57,7 +72,25 @@ export default function ItemsPage() {
   );
 
   const { data, isLoading, isFetching } = useItems(queryParams);
+  const {
+    data: partNumberResults,
+    isLoading: isPartNumberLoading,
+    isFetching: isPartNumberFetching,
+  } = useSearchByPartNumber(partNumberSearchMode ? partNumberQuery : '');
+  const {
+    data: vehicleSearchResults,
+    isLoading: isVehicleSearchLoading,
+    isFetching: isVehicleSearchFetching,
+  } = useVehicleSearch({
+    makeId: vehicleFilters.makeId,
+    modelId: vehicleFilters.modelId,
+    year: vehicleFilters.year,
+    page: filters.page,
+    limit: filters.limit,
+  });
   const deleteItem = useDeleteItem();
+
+  const isVehicleFilterActive = !!vehicleFilters.makeId;
 
   const handleDelete = (record: Item) => {
     confirm({
@@ -224,6 +257,36 @@ export default function ItemsPage() {
     }));
   };
 
+  if (isLoading) {
+    return (
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Items
+          </Title>
+          <Space>
+            <Button icon={<DownloadOutlined />}>Export</Button>
+            <Link href="/items/new">
+              <Button type="primary" icon={<PlusOutlined />}>
+                New Item
+              </Button>
+            </Link>
+          </Space>
+        </div>
+        <Card>
+          <TableSkeleton rows={10} columns={9} />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div
@@ -238,6 +301,21 @@ export default function ItemsPage() {
           Items
         </Title>
         <Space>
+          {selectedRowKeys.length > 0 && (
+            <BarcodeLabelPrint
+              items={selectedItems.map((i) => ({
+                id: i.id,
+                sku: i.sku,
+                name: i.name,
+                sellingPrice: Number(i.sellingPrice),
+              }))}
+              trigger={
+                <Button icon={<PrinterOutlined />}>
+                  Print Labels ({selectedRowKeys.length})
+                </Button>
+              }
+            />
+          )}
           <Button icon={<DownloadOutlined />}>Export</Button>
           <Link href="/items/new">
             <Button type="primary" icon={<PlusOutlined />}>
@@ -250,44 +328,77 @@ export default function ItemsPage() {
       <Card>
         <div style={{ marginBottom: 16 }}>
           <Space wrap>
-            <Input
-              placeholder="Search by SKU, name, or part number..."
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => {
-                setSearchText(e.target.value);
-                setFilters((prev) => ({ ...prev, page: 1 }));
+            {partNumberSearchMode ? (
+              <Input
+                placeholder="Search by part number across all references..."
+                prefix={<SwapOutlined />}
+                value={partNumberQuery}
+                onChange={(e) => setPartNumberQuery(e.target.value)}
+                style={{ width: 380 }}
+                allowClear
+              />
+            ) : (
+              <Input
+                placeholder="Search by SKU, name, or part number..."
+                prefix={<SearchOutlined />}
+                value={searchText}
+                onChange={(e) => {
+                  setSearchText(e.target.value);
+                  setFilters((prev) => ({ ...prev, page: 1 }));
+                }}
+                style={{ width: 300 }}
+                allowClear
+              />
+            )}
+            <Button
+              type={partNumberSearchMode ? 'primary' : 'default'}
+              icon={<SwapOutlined />}
+              onClick={() => {
+                setPartNumberSearchMode((prev) => !prev);
+                setPartNumberQuery('');
+                setSearchText('');
               }}
-              style={{ width: 300 }}
-              allowClear
-            />
-            <Select
-              placeholder="Status"
-              style={{ width: 120 }}
-              allowClear
-              value={filters.status}
-              onChange={(value) => setFilters((prev) => ({ ...prev, status: value, page: 1 }))}
-              options={[
-                { value: 'ACTIVE', label: 'Active' },
-                { value: 'INACTIVE', label: 'Inactive' },
-              ]}
-            />
-            <Select
-              placeholder="Type"
-              style={{ width: 140 }}
-              allowClear
-              value={filters.type}
-              onChange={(value) => setFilters((prev) => ({ ...prev, type: value, page: 1 }))}
-              options={[
-                { value: 'INVENTORY', label: 'Inventory' },
-                { value: 'SERVICE', label: 'Service' },
-                { value: 'NON_INVENTORY', label: 'Non-Inventory' },
-              ]}
-            />
+            >
+              Part No. Search
+            </Button>
+            {!partNumberSearchMode && (
+              <>
+                <Select
+                  placeholder="Status"
+                  style={{ width: 120 }}
+                  allowClear
+                  value={filters.status}
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, status: value, page: 1 }))
+                  }
+                  options={[
+                    { value: 'ACTIVE', label: 'Active' },
+                    { value: 'INACTIVE', label: 'Inactive' },
+                  ]}
+                />
+                <Select
+                  placeholder="Type"
+                  style={{ width: 140 }}
+                  allowClear
+                  value={filters.type}
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, type: value, page: 1 }))
+                  }
+                  options={[
+                    { value: 'INVENTORY', label: 'Inventory' },
+                    { value: 'SERVICE', label: 'Service' },
+                    { value: 'NON_INVENTORY', label: 'Non-Inventory' },
+                  ]}
+                />
+              </>
+            )}
             <Button
               icon={<FilterOutlined />}
               onClick={() => {
                 setSearchText('');
+                setPartNumberQuery('');
+                setPartNumberSearchMode(false);
+                setVehicleFilters({});
                 setFilters({
                   page: 1,
                   limit: 25,
@@ -299,25 +410,94 @@ export default function ItemsPage() {
               Reset
             </Button>
           </Space>
+          {!partNumberSearchMode && (
+            <div style={{ marginTop: 8 }}>
+              <VehicleSearchFilter
+                onFilterChange={(vf) => {
+                  setVehicleFilters(vf);
+                  setFilters((prev) => ({ ...prev, page: 1 }));
+                }}
+              />
+            </div>
+          )}
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={data?.data || []}
-          rowKey="id"
-          loading={isLoading || isFetching}
-          onChange={handleTableChange}
-          pagination={{
-            current: filters.page,
-            pageSize: filters.limit,
-            total: data?.meta?.total || 0,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `Total ${total} items`,
-            pageSizeOptions: ['10', '25', '50', '100'],
-          }}
-          scroll={{ x: 1200 }}
-        />
+        {partNumberSearchMode ? (
+          <Table<PartNumberSearchResult>
+            columns={[
+              ...(columns.slice(0, -1) as TableColumnsType<PartNumberSearchResult>),
+              {
+                title: 'Matched On',
+                key: 'matchedOn',
+                width: 250,
+                ellipsis: true,
+                render: (_: unknown, record: PartNumberSearchResult) =>
+                  record.matchedOn?.length ? (
+                    <span style={{ fontSize: 12, color: '#1677ff' }}>
+                      {record.matchedOn.join('; ')}
+                    </span>
+                  ) : (
+                    '-'
+                  ),
+              },
+              ...(columns.slice(-1) as TableColumnsType<PartNumberSearchResult>),
+            ]}
+            dataSource={partNumberResults?.data || []}
+            rowKey="id"
+            loading={isPartNumberLoading || isPartNumberFetching}
+            pagination={false}
+            scroll={{ x: 1400 }}
+            locale={{
+              emptyText: partNumberQuery
+                ? 'No items found matching this part number'
+                : 'Enter a part number to search',
+            }}
+          />
+        ) : isVehicleFilterActive ? (
+          <Table
+            columns={columns}
+            dataSource={(vehicleSearchResults?.data as Item[]) || []}
+            rowKey="id"
+            loading={isVehicleSearchLoading || isVehicleSearchFetching}
+            onChange={handleTableChange}
+            pagination={{
+              current: filters.page,
+              pageSize: filters.limit,
+              total: vehicleSearchResults?.meta?.total || 0,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `Total ${total} compatible items`,
+              pageSizeOptions: ['10', '25', '50', '100'],
+            }}
+            scroll={{ x: 1200 }}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={data?.data || []}
+            rowKey="id"
+            loading={isLoading || isFetching}
+            onChange={handleTableChange}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys, rows) => {
+                setSelectedRowKeys(keys);
+                setSelectedItems(rows as Item[]);
+              },
+              preserveSelectedRowKeys: true,
+            }}
+            pagination={{
+              current: filters.page,
+              pageSize: filters.limit,
+              total: data?.meta?.total || 0,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `Total ${total} items`,
+              pageSizeOptions: ['10', '25', '50', '100'],
+            }}
+            scroll={{ x: 1200 }}
+          />
+        )}
       </Card>
     </div>
   );

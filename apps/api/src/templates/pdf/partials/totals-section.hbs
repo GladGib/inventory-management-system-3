@@ -1,40 +1,40 @@
 <div class="totals-section">
   <div class="totals-box">
     <div class="totals-row">
-      <span class="totals-label">Subtotal</span>
+      <span class="totals-label">{{t 'subtotal'}}</span>
       <span class="totals-value">{{formatCurrency subtotal}}</span>
     </div>
     {{#if (gt discountAmount 0)}}
     <div class="totals-row discount">
-      <span class="totals-label">Discount</span>
+      <span class="totals-label">{{t 'discount'}}</span>
       <span class="totals-value">-{{formatCurrency discountAmount}}</span>
     </div>
     {{/if}}
     {{#ifExists shippingCharges}}
     {{#if (gt shippingCharges 0)}}
     <div class="totals-row">
-      <span class="totals-label">Shipping</span>
+      <span class="totals-label">{{t 'shipping'}}</span>
       <span class="totals-value">{{formatCurrency shippingCharges}}</span>
     </div>
     {{/if}}
     {{/ifExists}}
     {{#if (gt taxAmount 0)}}
     <div class="totals-row">
-      <span class="totals-label">Tax (SST)</span>
+      <span class="totals-label">{{t 'taxSst'}}</span>
       <span class="totals-value">{{formatCurrency taxAmount}}</span>
     </div>
     {{/if}}
     <div class="totals-row total">
-      <span class="totals-label">Total</span>
+      <span class="totals-label">{{t 'total'}}</span>
       <span class="totals-value">{{formatCurrency total}}</span>
     </div>
     {{#ifExists amountPaid}}
     <div class="totals-row">
-      <span class="totals-label">Amount Paid</span>
+      <span class="totals-label">{{t 'amountPaid'}}</span>
       <span class="totals-value">{{formatCurrency amountPaid}}</span>
     </div>
     <div class="totals-row balance {{#if (eq balance 0)}}paid{{/if}}">
-      <span class="totals-label">Balance Due</span>
+      <span class="totals-label">{{t 'balanceDue'}}</span>
       <span class="totals-value">{{formatCurrency balance}}</span>
     </div>
     {{/ifExists}}

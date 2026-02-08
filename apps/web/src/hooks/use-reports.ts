@@ -113,6 +113,17 @@ export function useStockAging(filters?: StockAgingFilters) {
   });
 }
 
+// ============ Generic Report Query ============
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useReport(endpoint: string, params?: Record<string, any>, enabled = true) {
+  return useQuery({
+    queryKey: ['reports', 'generic', endpoint, params],
+    queryFn: () => reportsService.getReport(endpoint, params),
+    enabled,
+  });
+}
+
 // ============ Export Utilities ============
 
 export function useExportReport() {

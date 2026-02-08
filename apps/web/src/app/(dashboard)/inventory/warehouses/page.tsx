@@ -11,16 +11,24 @@ import {
   type MenuProps,
   type TableColumnsType,
 } from 'antd';
-import { PlusOutlined, MoreOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  MoreOutlined,
+  EyeOutlined,
+  EditOutlined,
+  AppstoreOutlined,
+} from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 import { useWarehouses } from '@/hooks/use-inventory';
 import { Warehouse } from '@/lib/inventory';
 
 const { Title } = Typography;
 
 export default function WarehousesPage() {
+  const router = useRouter();
   const { data: warehouses, isLoading } = useWarehouses();
 
-  const getActionMenuItems = (_record: Warehouse): MenuProps['items'] => [
+  const getActionMenuItems = (record: Warehouse): MenuProps['items'] => [
     {
       key: 'view',
       icon: <EyeOutlined />,
@@ -30,6 +38,12 @@ export default function WarehousesPage() {
       key: 'edit',
       icon: <EditOutlined />,
       label: 'Edit',
+    },
+    {
+      key: 'bins',
+      icon: <AppstoreOutlined />,
+      label: 'Bins & Locations',
+      onClick: () => router.push(`/inventory/warehouses/${record.id}/bins`),
     },
   ];
 

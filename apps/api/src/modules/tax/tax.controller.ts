@@ -174,6 +174,29 @@ export class TaxController {
     );
   }
 
+  // ============ Effective Tax Rate Resolution ============
+
+  @Get('rates/:id/effective')
+  @ApiOperation({ summary: 'Get effective tax rate for a transaction date' })
+  @ApiResponse({ status: 200, description: 'Effective tax rate details' })
+  @ApiQuery({ name: 'transactionDate', required: true, description: 'Transaction date (ISO 8601)' })
+  async getEffectiveTaxRate(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('transactionDate') transactionDate: string,
+  ) {
+    return this.taxService.getEffectiveTaxRate(id, new Date(transactionDate), organizationId);
+  }
+
+  @Get('regime')
+  @ApiOperation({ summary: 'Get the Malaysian tax regime for a given date' })
+  @ApiResponse({ status: 200, description: 'Tax regime name' })
+  @ApiQuery({ name: 'date', required: true, description: 'Date to check (ISO 8601)' })
+  async getTaxRegimeForDate(@Query('date') date: string) {
+    const regime = this.taxService.getTaxRegimeForDate(new Date(date));
+    return { date, regime };
+  }
+
   // ============ Tax Calculation (Utility) ============
 
   @Post('calculate')

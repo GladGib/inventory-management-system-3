@@ -39,6 +39,38 @@ import { EmailModule } from './modules/email/email.module';
 import { CompositeModule } from './modules/composite/composite.module';
 import { ReorderModule } from './modules/reorder/reorder.module';
 
+// Phase 8: Accounting
+import { AccountingModule } from './modules/accounting/accounting.module';
+
+// Phase 9: Portals
+import { PortalAuthModule } from './modules/portal/portal-auth/portal-auth.module';
+import { CustomerPortalModule } from './modules/portal/customer-portal/customer-portal.module';
+import { VendorPortalModule } from './modules/portal/vendor-portal/vendor-portal.module';
+
+// Phase 10: Banking
+import { BankingModule } from './modules/banking/banking.module';
+
+// Phase 11: Online Payment Gateway
+import { PaymentGatewayModule } from './modules/payments/gateway/payment-gateway.module';
+
+// Phase 12: Background Job Queue
+import { QueueModule } from './modules/queue/queue.module';
+
+// Phase 13: Caching
+import { AppCacheModule } from './modules/cache/cache.module';
+
+// Phase 14: Security, Audit, Backup, Monitoring
+import { AuditModule } from './modules/audit/audit.module';
+import { SecurityModule } from './modules/security/security.module';
+import { BackupModule } from './modules/backup/backup.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
+
+// Phase 15: Full-Text Search (Elasticsearch with database fallback)
+import { SearchModule } from './modules/search/search.module';
+
+// Phase 16: Mobile Push Notifications
+import { NotificationsModule } from './modules/notifications/notifications.module';
+
 // App Controller for health check
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -100,6 +132,38 @@ import { AppService } from './app.service';
     // Phase 7: Composite Items & Reorder Automation
     CompositeModule,
     ReorderModule,
+
+    // Phase 8: Accounting
+    AccountingModule,
+
+    // Phase 9: Portals
+    PortalAuthModule,
+    CustomerPortalModule,
+    VendorPortalModule,
+
+    // Phase 10: Banking
+    BankingModule,
+
+    // Phase 11: Online Payment Gateway
+    PaymentGatewayModule,
+
+    // Phase 12: Background Job Queue (BullMQ + Redis)
+    QueueModule,
+
+    // Phase 13: Caching (in-memory, Redis-ready)
+    AppCacheModule,
+
+    // Phase 14: Security, Audit, Backup, Monitoring
+    AuditModule,
+    SecurityModule,
+    BackupModule,
+    MonitoringModule,
+
+    // Phase 15: Full-Text Search (Elasticsearch with database fallback)
+    SearchModule,
+
+    // Phase 16: Mobile Push Notifications
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

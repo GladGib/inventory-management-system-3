@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{_locale}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales Order - {{documentNumber}}</title>
+  <title>{{t 'salesOrder'}} - {{documentNumber}}</title>
   {{> styles}}
 </head>
 <body>
   <div class="document">
     <!-- Header -->
     {{> document-header
-        documentTitle="Sales Order"
+        documentTitle=(t 'salesOrder')
         documentNumber=documentNumber
         documentDate=orderDate
-        documentDateLabel="Order Date"
+        documentDateLabel=(t 'orderDate')
         status=status
         organization=organization
     }}
@@ -21,29 +21,29 @@
     <!-- Customer Info and Order Details -->
     <div class="info-grid">
       {{> address-block
-          title="Bill To"
+          title=(t 'billTo')
           contact=customer
           address=customer.billingAddress
       }}
 
       <div class="document-info-box">
         <div class="info-row">
-          <span class="info-label">Order Date</span>
+          <span class="info-label">{{t 'orderDate'}}</span>
           <span class="info-value">{{formatDate orderDate}}</span>
         </div>
         {{#ifExists expectedShipDate}}
         <div class="info-row">
-          <span class="info-label">Expected Ship Date</span>
+          <span class="info-label">{{t 'expectedShipDate'}}</span>
           <span class="info-value">{{formatDate expectedShipDate}}</span>
         </div>
         {{/ifExists}}
         <div class="info-row">
-          <span class="info-label">Order Status</span>
+          <span class="info-label">{{t 'orderStatus'}}</span>
           <span class="info-value">{{status}}</span>
         </div>
         {{#ifExists customer.taxNumber}}
         <div class="info-row">
-          <span class="info-label">Customer SST No</span>
+          <span class="info-label">{{t 'customerSstNo'}}</span>
           <span class="info-value">{{customer.taxNumber}}</span>
         </div>
         {{/ifExists}}
@@ -54,7 +54,7 @@
     <!-- Shipping Address if different -->
     <div class="info-grid" style="margin-top: -15px;">
       {{> address-block
-          title="Ship To"
+          title=(t 'shipTo')
           contact=customer
           address=customer.shippingAddress
       }}
@@ -77,7 +77,7 @@
     <!-- Notes -->
     {{#ifExists notes}}
     <div class="notes-section">
-      <div class="notes-title">Notes</div>
+      <div class="notes-title">{{t 'notes'}}</div>
       <div class="notes-content">{{notes}}</div>
     </div>
     {{/ifExists}}
@@ -85,7 +85,7 @@
     <!-- Terms and Conditions -->
     {{#ifExists termsConditions}}
     <div class="terms-section">
-      <div class="terms-title">Terms & Conditions</div>
+      <div class="terms-title">{{t 'termsAndConditions'}}</div>
       <div class="terms-content">{{termsConditions}}</div>
     </div>
     {{/ifExists}}
@@ -94,11 +94,11 @@
     <div class="signature-section">
       <div class="signature-box">
         <div class="signature-line"></div>
-        <div class="signature-label">Authorized Signature</div>
+        <div class="signature-label">{{t 'authorizedSignature'}}</div>
       </div>
       <div class="signature-box">
         <div class="signature-line"></div>
-        <div class="signature-label">Customer Signature</div>
+        <div class="signature-label">{{t 'customerSignature'}}</div>
       </div>
     </div>
 

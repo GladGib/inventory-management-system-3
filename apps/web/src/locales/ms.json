@@ -449,7 +449,15 @@
     "einvoiceClientSecret": "Rahsia Pelanggan",
     "language": "Bahasa",
     "english": "English",
-    "bahasaMalaysia": "Bahasa Malaysia"
+    "bahasaMalaysia": "Bahasa Malaysia",
+    "documentLanguage": "Bahasa Dokumen",
+    "documentLanguageDescription": "Bahasa lalai untuk dokumen PDF yang dijana (invois, pesanan jualan, pesanan belian, bil)",
+    "documentLanguageSaved": "Keutamaan bahasa dokumen disimpan",
+    "documentTemplates": "Templat Dokumen",
+    "documentSettings": "Tetapan Dokumen",
+    "downloadPdf": "Muat Turun PDF",
+    "downloadPdfEn": "Muat Turun PDF (English)",
+    "downloadPdfMs": "Muat Turun PDF (Bahasa Malaysia)"
   },
   "dashboard": {
     "title": "Papan Pemuka",

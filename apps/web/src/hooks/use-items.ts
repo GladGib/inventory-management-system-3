@@ -8,6 +8,16 @@ import {
   ItemsResponse,
   CreateItemDto,
   UpdateItemDto,
+  CrossReference,
+  CreateCrossReferenceDto,
+  UpdateCrossReferenceDto,
+  PartNumberSearchResponse,
+  BarcodeResponse,
+  BatchBarcodeItem,
+  BatchBarcodeRequest,
+  SupersessionChainResponse,
+  CreateSupersessionDto,
+  PartSupersession,
 } from '@/lib/items';
 
 // Query keys
@@ -18,6 +28,10 @@ export const itemKeys = {
   details: () => [...itemKeys.all, 'detail'] as const,
   detail: (id: string) => [...itemKeys.details(), id] as const,
   lowStock: () => [...itemKeys.all, 'low-stock'] as const,
+  crossReferences: (itemId: string) => [...itemKeys.all, 'cross-references', itemId] as const,
+  partNumberSearch: (query: string) => [...itemKeys.all, 'part-number-search', query] as const,
+  barcode: (itemId: string) => [...itemKeys.all, 'barcode', itemId] as const,
+  supersessionChain: (itemId: string) => [...itemKeys.all, 'supersession-chain', itemId] as const,
 };
 
 // ============ Queries ============
@@ -89,6 +103,131 @@ export function useDeleteItem() {
     },
     onError: (error: Error & { response?: { data?: { message?: string } } }) => {
       message.error(error.response?.data?.message || 'Failed to delete item');
+    },
+  });
+}
+
+// ============ Cross-Reference Hooks ============
+
+export function useCrossReferences(itemId: string) {
+  return useQuery<CrossReference[]>({
+    queryKey: itemKeys.crossReferences(itemId),
+    queryFn: () => itemsService.getCrossReferences(itemId),
+    enabled: !!itemId,
+  });
+}
+
+export function useAddCrossReference() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ itemId, data }: { itemId: string; data: CreateCrossReferenceDto }) =>
+      itemsService.addCrossReference(itemId, data),
+    onSuccess: (_, { itemId }) => {
+      queryClient.invalidateQueries({ queryKey: itemKeys.crossReferences(itemId) });
+      message.success('Cross-reference added successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to add cross-reference');
+    },
+  });
+}
+
+export function useUpdateCrossReference() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      crossRefId,
+      itemId,
+      data,
+    }: {
+      crossRefId: string;
+      itemId: string;
+      data: UpdateCrossReferenceDto;
+    }) => itemsService.updateCrossReference(crossRefId, data),
+    onSuccess: (_, { itemId }) => {
+      queryClient.invalidateQueries({ queryKey: itemKeys.crossReferences(itemId) });
+      message.success('Cross-reference updated successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to update cross-reference');
+    },
+  });
+}
+
+export function useDeleteCrossReference() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ crossRefId }: { crossRefId: string; itemId: string }) =>
+      itemsService.deleteCrossReference(crossRefId),
+    onSuccess: (_, { itemId }) => {
+      queryClient.invalidateQueries({ queryKey: itemKeys.crossReferences(itemId) });
+      message.success('Cross-reference deleted successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to delete cross-reference');
+    },
+  });
+}
+
+export function useSearchByPartNumber(query: string) {
+  return useQuery<PartNumberSearchResponse>({
+    queryKey: itemKeys.partNumberSearch(query),
+    queryFn: () => itemsService.searchByPartNumber(query),
+    enabled: !!query && query.trim().length >= 2,
+  });
+}
+
+// ============ Barcode Hooks ============
+
+export function useBarcode(itemId: string, enabled = true) {
+  return useQuery<BarcodeResponse>({
+    queryKey: itemKeys.barcode(itemId),
+    queryFn: () => itemsService.getBarcode(itemId),
+    enabled: !!itemId && enabled,
+  });
+}
+
+export function useBatchBarcodes() {
+  return useMutation({
+    mutationFn: (data: BatchBarcodeRequest) => itemsService.getBatchBarcodes(data),
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to generate barcodes');
+    },
+  });
+}
+
+// ============ Supersession Hooks ============
+
+export function useSupersessionChain(itemId: string) {
+  return useQuery<SupersessionChainResponse>({
+    queryKey: itemKeys.supersessionChain(itemId),
+    queryFn: () => itemsService.getSupersessionChain(itemId),
+    enabled: !!itemId,
+  });
+}
+
+export function useSupersedeItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      itemId,
+      data,
+    }: {
+      itemId: string;
+      data: CreateSupersessionDto;
+    }) => itemsService.supersedeItem(itemId, data),
+    onSuccess: (_, { itemId, data }) => {
+      queryClient.invalidateQueries({ queryKey: itemKeys.supersessionChain(itemId) });
+      queryClient.invalidateQueries({ queryKey: itemKeys.supersessionChain(data.newItemId) });
+      queryClient.invalidateQueries({ queryKey: itemKeys.detail(itemId) });
+      message.success('Supersession created successfully');
+    },
+    onError: (error: Error & { response?: { data?: { message?: string } } }) => {
+      message.error(error.response?.data?.message || 'Failed to create supersession');
     },
   });
 }

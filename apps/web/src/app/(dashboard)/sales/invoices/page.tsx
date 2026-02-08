@@ -35,6 +35,7 @@ import {
 } from '@ant-design/icons';
 import { useInvoices, useSendInvoice, useVoidInvoice } from '@/hooks/use-sales';
 import { Invoice, InvoiceStatus, InvoiceQueryParams } from '@/lib/sales';
+import { TableSkeleton } from '@/components/skeletons';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -237,6 +238,33 @@ export default function InvoicesPage() {
       limit: pagination.pageSize || 25,
     }));
   };
+
+  if (isLoading) {
+    return (
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Invoices
+          </Title>
+          <Link href="/sales/invoices/new">
+            <Button type="primary" icon={<PlusOutlined />}>
+              New Invoice
+            </Button>
+          </Link>
+        </div>
+        <Card>
+          <TableSkeleton rows={10} columns={8} />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>

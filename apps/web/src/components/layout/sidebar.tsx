@@ -12,6 +12,7 @@ import {
   BarChartOutlined,
   SettingOutlined,
   SwapOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -51,10 +52,12 @@ const menuItems: MenuItem[] = [
     getItem('Warehouses', '/inventory/warehouses'),
   ]),
   getItem('Sales', '/sales', <ShoppingCartOutlined />, [
+    getItem('Quotes', '/sales/quotes'),
     getItem('Sales Orders', '/sales/orders'),
     getItem('Invoices', '/sales/invoices'),
     getItem('Payments Received', '/sales/payments'),
     getItem('Sales Returns', '/sales/returns'),
+    getItem('Core Returns', '/sales/core-returns'),
   ]),
   getItem('Purchases', '/purchases', <SwapOutlined />, [
     getItem('Purchase Orders', '/purchases/orders'),
@@ -66,13 +69,22 @@ const menuItems: MenuItem[] = [
     getItem('Customers', '/contacts/customers'),
     getItem('Vendors', '/contacts/vendors'),
   ]),
-  getItem('Reports', '/reports', <BarChartOutlined />),
+  getItem('Reports', '/reports', <BarChartOutlined />, [
+    getItem('Overview', '/reports'),
+    getItem('Journal Entries', '/reports/journal-entries'),
+    getItem('Trial Balance', '/reports/trial-balance'),
+  ]),
   getItem('Settings', '/settings', <SettingOutlined />, [
     getItem('Organization', '/settings'),
     getItem('Tax Rates', '/settings/tax-rates'),
     getItem('Payment Terms', '/settings/payment-terms'),
     getItem('Price Lists', '/settings/price-lists'),
+    getItem('Vehicles', '/settings/vehicles'),
     getItem('e-Invoice', '/settings/einvoice'),
+    getItem('Accounting', '/settings/accounting'),
+    getItem('Banking', '/settings/banking'),
+    getItem('Audit Logs', '/settings/audit-logs'),
+    getItem('Backups', '/settings/backups'),
   ]),
 ];
 

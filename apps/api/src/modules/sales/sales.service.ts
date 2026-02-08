@@ -4,13 +4,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { PdfService, SalesOrderPdfData, InvoicePdfData } from '@/modules/common/pdf';
+import { DocumentLocale } from '@/common/i18n/document-translations';
 import { CreateSalesOrderDto, UpdateSalesOrderDto, DiscountType } from './dto/create-sales-order.dto';
 import { CreateInvoiceDto, CreateInvoiceFromOrderDto } from './dto/create-invoice.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
 @Injectable()
 export class SalesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfService: PdfService,
+  ) {}
 
   // ============ Sales Orders ============
 
@@ -912,5 +917,183 @@ export class SalesService {
     }
 
     return payment;
+  }
+
+  // ============ PDF Generation ============
+
+  private async getOrganizationForPdf(organizationId: string) {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    return {
+      name: org.name,
+      address: org.address as any,
+      phone: org.phone || undefined,
+      email: org.email || undefined,
+      website: org.website || undefined,
+      sstNumber: org.sstNumber || undefined,
+      businessRegNo: org.businessRegNo || undefined,
+      tin: org.tin || undefined,
+      logoUrl: org.logoUrl || undefined,
+    };
+  }
+
+  private getDocumentLocale(organization: any, requestedLocale?: string): DocumentLocale {
+    if (requestedLocale === 'ms' || requestedLocale === 'en') {
+      return requestedLocale;
+    }
+    // Check organization settings for default document language
+    const settings = organization.settings as Record<string, unknown> | null;
+    if (settings?.documentLanguage === 'ms') return 'ms';
+    return 'en';
+  }
+
+  async generateSalesOrderPdf(
+    id: string,
+    organizationId: string,
+    locale?: string,
+  ): Promise<Buffer> {
+    const order = await this.prisma.salesOrder.findFirst({
+      where: { id, organizationId },
+      include: {
+        customer: true,
+        items: {
+          include: { item: { select: { sku: true, name: true, unit: true } } },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!order) throw new NotFoundException('Sales order not found');
+
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    const organization = await this.getOrganizationForPdf(organizationId);
+    const resolvedLocale = this.getDocumentLocale(org, locale);
+
+    const customer = order.customer;
+    const pdfData: SalesOrderPdfData = {
+      organization,
+      documentNumber: order.orderNumber,
+      orderDate: order.orderDate.toISOString(),
+      expectedShipDate: order.expectedShipDate?.toISOString(),
+      customer: {
+        displayName: customer.displayName,
+        companyName: customer.companyName || undefined,
+        email: customer.email || undefined,
+        phone: customer.phone || undefined,
+        taxNumber: customer.taxNumber || undefined,
+        billingAddress: (customer.billingAddress || order.billingAddress) as any,
+        shippingAddress: (customer.shippingAddress || order.shippingAddress) as any,
+      },
+      items: order.items.map((item) => ({
+        sku: item.item?.sku || undefined,
+        name: item.item?.name || item.description || '',
+        description: item.description || undefined,
+        quantity: Number(item.quantity),
+        unit: item.unit || item.item?.unit || 'PCS',
+        unitPrice: Number(item.rate),
+        discountPercent: item.discountType === 'PERCENTAGE' ? Number(item.discountValue) : undefined,
+        discountAmount: Number(item.discountAmount),
+        taxAmount: Number(item.taxAmount),
+        amount: Number(item.amount),
+      })),
+      subtotal: Number(order.subtotal),
+      discountAmount: Number(order.discountAmount),
+      shippingCharges: Number(order.shippingCharges),
+      taxAmount: Number(order.taxAmount),
+      total: Number(order.total),
+      notes: order.notes || undefined,
+      termsConditions: order.termsConditions || undefined,
+      status: order.status,
+    };
+
+    return this.pdfService.generateSalesOrderPdf(pdfData, resolvedLocale);
+  }
+
+  async generateInvoicePdf(
+    id: string,
+    organizationId: string,
+    locale?: string,
+  ): Promise<Buffer> {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, organizationId },
+      include: {
+        customer: true,
+        items: {
+          include: { item: { select: { sku: true, name: true, unit: true } } },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!invoice) throw new NotFoundException('Invoice not found');
+
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+    if (!org) throw new NotFoundException('Organization not found');
+
+    const organization = await this.getOrganizationForPdf(organizationId);
+    const resolvedLocale = this.getDocumentLocale(org, locale);
+
+    const customer = invoice.customer;
+    const isPaid = Number(invoice.balance) <= 0;
+
+    // Get bank details from org settings
+    const settings = org.settings as Record<string, unknown> | null;
+    const bankDetails = settings?.bankDetails as {
+      bankName: string;
+      accountName: string;
+      accountNumber: string;
+    } | undefined;
+
+    const pdfData: InvoicePdfData = {
+      organization,
+      documentNumber: invoice.invoiceNumber,
+      orderDate: invoice.invoiceDate.toISOString(),
+      invoiceDate: invoice.invoiceDate.toISOString(),
+      dueDate: invoice.dueDate.toISOString(),
+      amountPaid: Number(invoice.amountPaid),
+      balance: Number(invoice.balance),
+      isPaid,
+      paymentTermDays: invoice.paymentTermDays || 30,
+      bankDetails,
+      customer: {
+        displayName: customer.displayName,
+        companyName: customer.companyName || undefined,
+        email: customer.email || undefined,
+        phone: customer.phone || undefined,
+        taxNumber: customer.taxNumber || undefined,
+        billingAddress: (customer.billingAddress || invoice.billingAddress) as any,
+      },
+      items: invoice.items.map((item) => ({
+        sku: item.item?.sku || undefined,
+        name: item.item?.name || item.description || '',
+        description: item.description || undefined,
+        quantity: Number(item.quantity),
+        unit: item.unit || item.item?.unit || 'PCS',
+        unitPrice: Number(item.rate),
+        discountPercent: item.discountType === 'PERCENTAGE' ? Number(item.discountValue) : undefined,
+        discountAmount: Number(item.discountAmount),
+        taxAmount: Number(item.taxAmount),
+        amount: Number(item.amount),
+      })),
+      subtotal: Number(invoice.subtotal),
+      discountAmount: Number(invoice.discountAmount),
+      shippingCharges: 0,
+      taxAmount: Number(invoice.taxAmount),
+      total: Number(invoice.total),
+      notes: invoice.notes || undefined,
+      termsConditions: invoice.termsConditions || undefined,
+      status: invoice.status,
+    };
+
+    return this.pdfService.generateInvoicePdf(pdfData, resolvedLocale);
   }
 }

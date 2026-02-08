@@ -17,7 +17,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname();
   const { user, isLoading, setUser } = useAuthStore();
 
+  // Portal routes manage their own auth - skip main auth provider logic
+  const isPortalPath = pathname.startsWith('/portal');
+
   useEffect(() => {
+    if (isPortalPath) {
+      // Don't check main auth for portal routes
+      if (isLoading) setUser(null);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
         if (authService.isAuthenticated()) {
@@ -32,9 +41,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     checkAuth();
-  }, [setUser]);
+  }, [setUser, isPortalPath, isLoading]);
 
   useEffect(() => {
+    if (isPortalPath) return;
+
     if (!isLoading) {
       const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
@@ -44,7 +55,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         router.push('/dashboard');
       }
     }
-  }, [user, isLoading, pathname, router]);
+  }, [user, isLoading, pathname, router, isPortalPath]);
+
+  // Portal routes are always rendered (they manage their own auth)
+  if (isPortalPath) {
+    return <>{children}</>;
+  }
 
   // Show loading spinner while checking auth
   if (isLoading) {

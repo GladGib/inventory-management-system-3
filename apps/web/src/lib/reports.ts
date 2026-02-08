@@ -404,6 +404,13 @@ export const reportsService = {
     return response.data;
   },
 
+  // Generic report fetcher for dynamic report pages
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getReport(endpoint: string, params?: Record<string, any>): Promise<any> {
+    const response = await api.get(endpoint, { params });
+    return response.data;
+  },
+
   // Export Reports
   async exportReport(
     reportType: string,

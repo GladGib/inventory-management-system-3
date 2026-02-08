@@ -20,6 +20,7 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useCreateItem } from '@/hooks/use-items';
 import { CreateItemDto } from '@/lib/items';
 import { TaxRateSelect } from '@/components/tax';
+import { ItemSelect } from '@/components/sales';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -28,6 +29,7 @@ export default function NewItemPage() {
   const router = useRouter();
   const [form] = Form.useForm();
   const createItem = useCreateItem();
+  const hasCore = Form.useWatch('hasCore', form);
 
   const handleSubmit = async (values: CreateItemDto) => {
     createItem.mutate(values, {
@@ -64,6 +66,7 @@ export default function NewItemPage() {
           trackInventory: true,
           trackBatches: false,
           trackSerials: false,
+          hasCore: false,
         }}
       >
         <Row gutter={24}>
@@ -261,6 +264,46 @@ export default function NewItemPage() {
               <Text type="secondary">
                 Enable to track individual units by unique serial numbers
               </Text>
+            </Card>
+
+            <Card title="Core Item" style={{ marginTop: 16 }}>
+              <Form.Item name="hasCore" label="Has Core Charge" valuePropName="checked">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+              </Form.Item>
+              <Text type="secondary">
+                Enable if this item has a returnable core (e.g., alternators, starters, brake calipers)
+              </Text>
+
+              {hasCore && (
+                <>
+                  <Divider />
+                  <Form.Item
+                    name="coreCharge"
+                    label="Core Charge (RM)"
+                    rules={[
+                      {
+                        required: hasCore,
+                        message: 'Please enter the core charge amount',
+                      },
+                    ]}
+                  >
+                    <InputNumber
+                      style={{ width: '100%' }}
+                      min={0}
+                      precision={2}
+                      placeholder="0.00"
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="coreItemId"
+                    label="Core Item"
+                    extra="Optional: link to a separate core item in inventory"
+                  >
+                    <ItemSelect placeholder="Search for core item..." />
+                  </Form.Item>
+                </>
+              )}
             </Card>
 
             <Card title="Opening Stock" style={{ marginTop: 16 }}>

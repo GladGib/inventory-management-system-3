@@ -3,7 +3,13 @@
 import { useEffect } from 'react';
 import { Modal, Form, Input, InputNumber, Select, Switch, DatePicker, Row, Col } from 'antd';
 import dayjs from 'dayjs';
-import { TaxRate, TAX_TYPE_LABELS, CreateTaxRateDto, UpdateTaxRateDto } from '@/lib/tax-rates';
+import {
+  TaxRate,
+  TAX_TYPE_LABELS,
+  TAX_REGIME_LABELS,
+  CreateTaxRateDto,
+  UpdateTaxRateDto,
+} from '@/lib/tax-rates';
 import { useCreateTaxRate, useUpdateTaxRate } from '@/hooks/use-tax-rates';
 
 const { TextArea } = Input;
@@ -19,6 +25,14 @@ const taxTypeOptions = Object.entries(TAX_TYPE_LABELS).map(([value, label]) => (
   value,
   label,
 }));
+
+const taxRegimeOptions = [
+  { value: '', label: 'None' },
+  ...Object.entries(TAX_REGIME_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  })),
+];
 
 export function TaxRateForm({ open, taxRate, onClose, onSuccess }: TaxRateFormProps) {
   const [form] = Form.useForm();
@@ -52,6 +66,7 @@ export function TaxRateForm({ open, taxRate, onClose, onSuccess }: TaxRateFormPr
       const data: CreateTaxRateDto | UpdateTaxRateDto = {
         ...values,
         code: values.code?.toUpperCase(),
+        taxRegime: values.taxRegime || null,
         effectiveFrom: values.effectiveFrom?.toISOString(),
         effectiveTo: values.effectiveTo?.toISOString(),
       };
@@ -114,7 +129,7 @@ export function TaxRateForm({ open, taxRate, onClose, onSuccess }: TaxRateFormPr
         </Row>
 
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={8}>
             <Form.Item
               name="type"
               label="Type"
@@ -123,7 +138,20 @@ export function TaxRateForm({ open, taxRate, onClose, onSuccess }: TaxRateFormPr
               <Select options={taxTypeOptions} placeholder="Select tax type" />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={8}>
+            <Form.Item
+              name="taxRegime"
+              label="Tax Regime"
+              tooltip="Malaysian tax regime period this rate belongs to"
+            >
+              <Select
+                options={taxRegimeOptions}
+                placeholder="Select regime"
+                allowClear
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
             <Form.Item
               name="rate"
               label="Rate (%)"

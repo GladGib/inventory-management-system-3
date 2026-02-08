@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{_locale}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice - {{documentNumber}}</title>
+  <title>{{t 'invoice'}} - {{documentNumber}}</title>
   {{> styles}}
 </head>
 <body>
   <div class="document" style="position: relative;">
     {{#if isPaid}}
-    <div class="paid-watermark">PAID</div>
+    <div class="paid-watermark">{{t 'paidStatus'}}</div>
     {{/if}}
 
     <!-- Header -->
     {{> document-header
-        documentTitle="Invoice"
+        documentTitle=(t 'invoice')
         documentNumber=documentNumber
         documentDate=invoiceDate
-        documentDateLabel="Invoice Date"
+        documentDateLabel=(t 'invoiceDate')
         status=status
         organization=organization
     }}
@@ -25,37 +25,37 @@
     <!-- Customer Info and Invoice Details -->
     <div class="info-grid">
       {{> address-block
-          title="Bill To"
+          title=(t 'billTo')
           contact=customer
           address=customer.billingAddress
       }}
 
       <div class="document-info-box">
         <div class="info-row">
-          <span class="info-label">Invoice Date</span>
+          <span class="info-label">{{t 'invoiceDate'}}</span>
           <span class="info-value">{{formatDate invoiceDate}}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">Due Date</span>
+          <span class="info-label">{{t 'dueDate'}}</span>
           <span class="info-value" style="{{#if (eq status 'OVERDUE')}}color: #ff4d4f; font-weight: 700;{{/if}}">
             {{formatDate dueDate}}
           </span>
         </div>
         <div class="info-row">
-          <span class="info-label">Payment Terms</span>
-          <span class="info-value">Net {{paymentTermDays}} days</span>
+          <span class="info-label">{{t 'paymentTerms'}}</span>
+          <span class="info-value">{{t 'paymentTermsNet'}} {{paymentTermDays}} {{t 'date'}}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">Payment Status</span>
+          <span class="info-label">{{t 'paymentStatus'}}</span>
           <span class="info-value">
             <span class="payment-badge {{#if isPaid}}paid{{else}}{{#if (gt amountPaid 0)}}partial{{else}}unpaid{{/if}}{{/if}}">
-              {{#if isPaid}}PAID{{else}}{{#if (gt amountPaid 0)}}PARTIAL{{else}}UNPAID{{/if}}{{/if}}
+              {{#if isPaid}}{{t 'paidStatus'}}{{else}}{{#if (gt amountPaid 0)}}{{t 'partial'}}{{else}}{{t 'unpaid'}}{{/if}}{{/if}}
             </span>
           </span>
         </div>
         {{#ifExists customer.taxNumber}}
         <div class="info-row">
-          <span class="info-label">Customer SST No</span>
+          <span class="info-label">{{t 'customerSstNo'}}</span>
           <span class="info-value">{{customer.taxNumber}}</span>
         </div>
         {{/ifExists}}
@@ -78,12 +78,12 @@
     <!-- Bank Details for Payment -->
     {{#ifExists bankDetails}}
     <div class="bank-details">
-      <div class="bank-details-title">Payment Details</div>
+      <div class="bank-details-title">{{t 'paymentDetails'}}</div>
       <div class="bank-details-content">
-        <p><strong>Bank Name:</strong> {{bankDetails.bankName}}</p>
-        <p><strong>Account Name:</strong> {{bankDetails.accountName}}</p>
-        <p><strong>Account Number:</strong> {{bankDetails.accountNumber}}</p>
-        <p style="margin-top: 10px; font-style: italic;">Please use invoice number as payment reference.</p>
+        <p><strong>{{t 'bankName'}}:</strong> {{bankDetails.bankName}}</p>
+        <p><strong>{{t 'accountName'}}:</strong> {{bankDetails.accountName}}</p>
+        <p><strong>{{t 'accountNumber'}}:</strong> {{bankDetails.accountNumber}}</p>
+        <p style="margin-top: 10px; font-style: italic;">{{t 'paymentReference'}}</p>
       </div>
     </div>
     {{/ifExists}}
@@ -92,14 +92,14 @@
     {{#ifExists eInvoiceQrCode}}
     <div class="qr-code-section">
       <img src="{{eInvoiceQrCode}}" alt="e-Invoice QR Code" class="qr-code-image" />
-      <div class="qr-code-label">Scan for e-Invoice verification</div>
+      <div class="qr-code-label">{{t 'eInvoiceVerification'}}</div>
     </div>
     {{/ifExists}}
 
     <!-- Notes -->
     {{#ifExists notes}}
     <div class="notes-section">
-      <div class="notes-title">Notes</div>
+      <div class="notes-title">{{t 'notes'}}</div>
       <div class="notes-content">{{notes}}</div>
     </div>
     {{/ifExists}}
@@ -107,7 +107,7 @@
     <!-- Terms and Conditions -->
     {{#ifExists termsConditions}}
     <div class="terms-section">
-      <div class="terms-title">Terms & Conditions</div>
+      <div class="terms-title">{{t 'termsAndConditions'}}</div>
       <div class="terms-content">{{termsConditions}}</div>
     </div>
     {{/ifExists}}

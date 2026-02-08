@@ -15,10 +15,10 @@
   </div>
   {{/ifExists}}
   <div class="contact-info">
-    {{#ifExists contact.phone}}<p>Tel: {{contact.phone}}</p>{{/ifExists}}
-    {{#ifExists contact.email}}<p>Email: {{contact.email}}</p>{{/ifExists}}
+    {{#ifExists contact.phone}}<p>{{t 'tel'}}: {{contact.phone}}</p>{{/ifExists}}
+    {{#ifExists contact.email}}<p>{{t 'emailLabel'}}: {{contact.email}}</p>{{/ifExists}}
   </div>
   {{#ifExists contact.taxNumber}}
-  <div class="tax-number">SST No: {{contact.taxNumber}}</div>
+  <div class="tax-number">{{t 'sstNo'}}: {{contact.taxNumber}}</div>
   {{/ifExists}}
 </div>

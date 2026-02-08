@@ -3,6 +3,11 @@ import * as puppeteer from 'puppeteer';
 import * as Handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  getDocumentTranslations,
+  DocumentTranslations,
+  DocumentLocale,
+} from '@/common/i18n/document-translations';
 
 export interface PdfGenerateOptions {
   format?: 'A4' | 'Letter';
@@ -16,6 +21,7 @@ export interface PdfGenerateOptions {
   displayHeaderFooter?: boolean;
   headerTemplate?: string;
   footerTemplate?: string;
+  locale?: DocumentLocale;
 }
 
 export interface OrganizationInfo {
@@ -134,10 +140,15 @@ export interface BillPdfData {
   total: number;
   amountPaid: number;
   balance: number;
+  isPaid?: boolean;
   notes?: string;
   status: string;
   purchaseOrderNumber?: string;
 }
+
+// Module-level variable for current render translations.
+// Safe because Node.js is single-threaded and template rendering is synchronous.
+let _currentTranslations: DocumentTranslations | null = null;
 
 @Injectable()
 export class PdfService implements OnModuleInit, OnModuleDestroy {
@@ -160,6 +171,22 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
   }
 
   private registerHandlebarsHelpers() {
+    // Translation helper - resolves translation keys using current render translations.
+    // Works in all contexts (root, partials with hash params, block helpers)
+    // because it uses a module-level variable set before each synchronous render.
+    Handlebars.registerHelper('t', function(key: string) {
+      if (_currentTranslations && key in _currentTranslations) {
+        return (_currentTranslations as unknown as Record<string, string>)[key];
+      }
+      return key;
+    });
+
+    // Lowercase helper for CSS class names
+    Handlebars.registerHelper('lowercase', (str: string) => {
+      if (!str) return '';
+      return String(str).toLowerCase();
+    });
+
     // Format currency in Malaysian Ringgit
     Handlebars.registerHelper('formatCurrency', (amount: number) => {
       if (amount === null || amount === undefined || isNaN(amount)) return 'RM 0.00';
@@ -308,14 +335,22 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
       throw new Error(`Template '${templateName}' not found`);
     }
 
-    // Add current date and page info
+    // Resolve locale and translations
+    const locale = options.locale || 'en';
+    const translations = getDocumentTranslations(locale);
+
+    // Add current date, page info, and locale
     const templateData = {
       ...data,
+      _locale: locale,
       generatedAt: new Date().toISOString(),
       currentYear: new Date().getFullYear(),
     };
 
+    // Set module-level translations for the synchronous Handlebars render
+    _currentTranslations = translations;
     const html = template(templateData);
+    _currentTranslations = null;
 
     const browser = await this.getBrowser();
     const page = await browser.newPage();
@@ -339,8 +374,8 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
         headerTemplate: options.headerTemplate || '<div></div>',
         footerTemplate: options.footerTemplate || `
           <div style="width: 100%; font-size: 9px; padding: 0 15mm; display: flex; justify-content: space-between; color: #666;">
-            <span>Generated on ${new Date().toLocaleDateString('en-MY')}</span>
-            <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+            <span>${translations.generatedOn} ${new Date().toLocaleDateString(locale === 'ms' ? 'ms-MY' : 'en-MY')}</span>
+            <span>${translations.page} <span class="pageNumber"></span> ${translations.of} <span class="totalPages"></span></span>
           </div>
         `,
       });
@@ -351,19 +386,19 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async generateSalesOrderPdf(data: SalesOrderPdfData): Promise<Buffer> {
-    return this.generatePdf('sales-order', data as unknown as Record<string, unknown>);
+  async generateSalesOrderPdf(data: SalesOrderPdfData, locale?: DocumentLocale): Promise<Buffer> {
+    return this.generatePdf('sales-order', data as unknown as Record<string, unknown>, { locale });
   }
 
-  async generateInvoicePdf(data: InvoicePdfData): Promise<Buffer> {
-    return this.generatePdf('invoice', data as unknown as Record<string, unknown>);
+  async generateInvoicePdf(data: InvoicePdfData, locale?: DocumentLocale): Promise<Buffer> {
+    return this.generatePdf('invoice', data as unknown as Record<string, unknown>, { locale });
   }
 
-  async generatePurchaseOrderPdf(data: PurchaseOrderPdfData): Promise<Buffer> {
-    return this.generatePdf('purchase-order', data as unknown as Record<string, unknown>);
+  async generatePurchaseOrderPdf(data: PurchaseOrderPdfData, locale?: DocumentLocale): Promise<Buffer> {
+    return this.generatePdf('purchase-order', data as unknown as Record<string, unknown>, { locale });
   }
 
-  async generateBillPdf(data: BillPdfData): Promise<Buffer> {
-    return this.generatePdf('bill', data as unknown as Record<string, unknown>);
+  async generateBillPdf(data: BillPdfData, locale?: DocumentLocale): Promise<Buffer> {
+    return this.generatePdf('bill', data as unknown as Record<string, unknown>, { locale });
   }
 }

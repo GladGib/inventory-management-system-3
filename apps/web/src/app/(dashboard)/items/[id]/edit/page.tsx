@@ -23,6 +23,7 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useItem, useUpdateItem } from '@/hooks/use-items';
 import { UpdateItemDto } from '@/lib/items';
 import { TaxRateSelect } from '@/components/tax';
+import { ItemSelect } from '@/components/sales';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -35,6 +36,7 @@ export default function EditItemPage() {
   const [form] = Form.useForm();
   const { data: item, isLoading, error } = useItem(id);
   const updateItem = useUpdateItem();
+  const hasCore = Form.useWatch('hasCore', form);
 
   useEffect(() => {
     if (item) {
@@ -59,6 +61,9 @@ export default function EditItemPage() {
         trackInventory: item.trackInventory,
         trackBatches: item.trackBatches,
         trackSerials: item.trackSerials,
+        hasCore: item.hasCore,
+        coreCharge: item.coreCharge ? Number(item.coreCharge) : undefined,
+        coreItemId: item.coreItemId,
         status: item.status,
       });
     }
@@ -321,6 +326,46 @@ export default function EditItemPage() {
               <Text type="secondary">
                 Enable to track individual units by unique serial numbers
               </Text>
+            </Card>
+
+            <Card title="Core Item" style={{ marginTop: 16 }}>
+              <Form.Item name="hasCore" label="Has Core Charge" valuePropName="checked">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+              </Form.Item>
+              <Text type="secondary">
+                Enable if this item has a returnable core (e.g., alternators, starters, brake calipers)
+              </Text>
+
+              {hasCore && (
+                <>
+                  <Divider />
+                  <Form.Item
+                    name="coreCharge"
+                    label="Core Charge (RM)"
+                    rules={[
+                      {
+                        required: hasCore,
+                        message: 'Please enter the core charge amount',
+                      },
+                    ]}
+                  >
+                    <InputNumber
+                      style={{ width: '100%' }}
+                      min={0}
+                      precision={2}
+                      placeholder="0.00"
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="coreItemId"
+                    label="Core Item"
+                    extra="Optional: link to a separate core item in inventory"
+                  >
+                    <ItemSelect placeholder="Search for core item..." />
+                  </Form.Item>
+                </>
+              )}
             </Card>
           </Col>
         </Row>
