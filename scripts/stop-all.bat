@@ -20,9 +20,13 @@ call :stop_port 3000 "Web server"
 :: Stop process on port 3001 (API)
 call :stop_port 3001 "API server"
 
+:: Stop process on port 8081 (Expo dev server)
+call :stop_port 8081 "Expo dev server"
+
 :: Also kill any lingering cmd windows with IMS titles
 taskkill /F /FI "WINDOWTITLE eq IMS-API*" >nul 2>&1
 taskkill /F /FI "WINDOWTITLE eq IMS-Web*" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq IMS-Mobile*" >nul 2>&1
 
 echo Application servers stopped
 echo.

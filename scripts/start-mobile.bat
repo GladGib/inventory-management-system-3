@@ -55,13 +55,15 @@ echo ============================================
 echo  All Mobile Application Services Started!
 echo ============================================
 echo.
-echo   API:        http://localhost:3001
-echo   API Docs:   http://localhost:3001/api/docs
-echo   Mailpit:    http://localhost:8025
-echo   MinIO:      http://localhost:9001
+echo   API:           http://localhost:3001
+echo   API Docs:      http://localhost:3001/api/docs
+echo   Elasticsearch: http://localhost:9200
+echo   Mailpit:       http://localhost:8025
+echo   MinIO:         http://localhost:9001
 echo.
-echo NOTE: The mobile app (Flutter) should be started separately.
-echo       Run 'flutter run' in the apps/mobile directory.
+echo To start the mobile app (React Native / Expo):
+echo       cd apps\mobile
+echo       npx expo start
 echo.
 echo Press any key to close this window...
 pause >nul

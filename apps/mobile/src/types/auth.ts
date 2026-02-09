@@ -5,6 +5,12 @@
  * and returns tokens as { accessToken, refreshToken, tokenType, expiresIn }.
  */
 
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -12,11 +18,9 @@ export interface User {
   role: string;
   phone?: string;
   organizationId: string;
-  organization: {
-    id: string;
-    name: string;
-    slug: string;
-  };
+  organization: Organization;
+  /** Present when the user belongs to multiple organizations. */
+  organizations?: Organization[];
 }
 
 export interface LoginRequest {

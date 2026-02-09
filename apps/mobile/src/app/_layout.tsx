@@ -1,9 +1,30 @@
-import { useEffect } from 'react';
+import { useEffect, createContext, useContext } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/auth.store';
+import { useInactivityTimer } from '../hooks/useInactivityTimer';
+import { OfflineBanner } from '../components/OfflineBanner';
+import { useNetworkStatus, NetworkStatus } from '../hooks/useNetworkStatus';
+
+// ---------------------------------------------------------------------------
+// Network status context -- allows any screen to access connectivity state
+// ---------------------------------------------------------------------------
+
+const NetworkContext = createContext<NetworkStatus>({
+  isConnected: true,
+  isInternetReachable: true,
+  isSyncing: false,
+  pendingCount: 0,
+  triggerSync: async () => ({ attempted: 0, succeeded: 0, failed: 0 }),
+  refreshPendingCount: async () => {},
+});
+
+/** Hook to access network connectivity state from any component. */
+export function useNetwork(): NetworkStatus {
+  return useContext(NetworkContext);
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,9 +43,12 @@ const queryClient = new QueryClient({
 });
 
 function RootNavigator() {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, needsOrgSelection, checkAuth } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+
+  // Set up the inactivity timer (active only when authenticated)
+  const { recordActivity } = useInactivityTimer();
 
   // Hydrate auth state on first mount
   useEffect(() => {
@@ -36,15 +60,19 @@ function RootNavigator() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const onSelectOrg = segments[0] === '(auth)' && segments[1] === 'select-org';
 
     if (!isAuthenticated && !inAuthGroup) {
-      // User is not signed in and not on the login screen -- redirect
+      // User is not signed in and not on an auth screen -- redirect to login
       router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      // User is signed in but still on the auth screen -- redirect
+    } else if (isAuthenticated && needsOrgSelection && !onSelectOrg) {
+      // User is signed in but needs to pick an organization
+      router.replace('/(auth)/select-org');
+    } else if (isAuthenticated && !needsOrgSelection && inAuthGroup) {
+      // User is signed in, org is selected, but still on auth screen -- go to dashboard
       router.replace('/(tabs)/dashboard');
     }
-  }, [isAuthenticated, isLoading, segments]);
+  }, [isAuthenticated, isLoading, needsOrgSelection, segments]);
 
   // Show a full-screen loading indicator while checking auth
   if (isLoading) {
@@ -57,17 +85,31 @@ function RootNavigator() {
   }
 
   return (
-    <>
+    <View style={styles.rootContainer} onTouchStart={recordActivity}>
       <Stack screenOptions={{ headerShown: false }} />
       <StatusBar style="light" />
-    </>
+    </View>
+  );
+}
+
+function NetworkAwareRoot() {
+  const networkStatus = useNetworkStatus();
+
+  return (
+    <NetworkContext.Provider value={networkStatus}>
+      <RootNavigator />
+      <OfflineBanner
+        isConnected={networkStatus.isConnected}
+        isSyncing={networkStatus.isSyncing}
+      />
+    </NetworkContext.Provider>
   );
 }
 
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RootNavigator />
+      <NetworkAwareRoot />
     </QueryClientProvider>
   );
 }
@@ -78,5 +120,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#001529',
+  },
+  rootContainer: {
+    flex: 1,
   },
 });

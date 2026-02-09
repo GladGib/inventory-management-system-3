@@ -1,6 +1,15 @@
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../api/client';
 
 // -----------------------------------------------
@@ -37,6 +46,7 @@ interface OrderDetail {
   subtotal?: number;
   total?: number;
   taxAmount?: number;
+  discountAmount?: number;
   grandTotal?: number;
   date?: string;
   orderDate?: string;
@@ -56,7 +66,7 @@ export default function OrderDetailScreen() {
       ? `/purchases/orders/${id}`
       : `/sales/orders/${id}`;
 
-  const { data: order, isLoading } = useQuery<OrderDetail>({
+  const { data: order, isLoading, isRefetching, refetch } = useQuery<OrderDetail>({
     queryKey: ['order', id, type],
     queryFn: async () => {
       const res = await apiClient.get(endpoint);
@@ -64,6 +74,10 @@ export default function OrderDetailScreen() {
     },
     enabled: !!id,
   });
+
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const headerTitle = order?.orderNumber
     ? `Order ${order.orderNumber}`
@@ -93,6 +107,7 @@ export default function OrderDetailScreen() {
   const lineItems = order.items || order.lineItems || [];
   const subtotal = order.subtotal || order.total || 0;
   const taxAmount = order.taxAmount || 0;
+  const discountAmount = order.discountAmount || 0;
   const grandTotal = order.grandTotal || order.total || 0;
 
   const orderDate = order.date || order.orderDate || order.createdAt;
@@ -119,7 +134,13 @@ export default function OrderDetailScreen() {
         }}
       />
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.orderNumber}>
@@ -141,6 +162,12 @@ export default function OrderDetailScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Status Timeline */}
+        <StatusTimeline
+          currentStatus={order.status}
+          type={type === 'purchases' ? 'purchases' : 'sales'}
+        />
 
         {/* Contact Section */}
         <View style={styles.section}>
@@ -216,6 +243,18 @@ export default function OrderDetailScreen() {
               })}
             </Text>
           </View>
+          {discountAmount > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Discount</Text>
+              <Text style={[styles.totalValue, { color: '#52c41a' }]}>
+                -RM{' '}
+                {discountAmount.toLocaleString('en-MY', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text>
+            </View>
+          )}
           {taxAmount > 0 && (
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Tax</Text>
@@ -261,6 +300,101 @@ function DetailRow({ label, value }: { label: string; value: string }) {
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+// -----------------------------------------------
+// Status Timeline component
+// -----------------------------------------------
+
+const SALES_STAGES = ['DRAFT', 'CONFIRMED', 'PACKED', 'SHIPPED', 'DELIVERED'];
+const PURCHASE_STAGES = ['DRAFT', 'CONFIRMED', 'SENT', 'SHIPPED', 'DELIVERED'];
+const TERMINAL_STATUSES = ['CANCELLED', 'VOID'];
+
+interface StatusTimelineProps {
+  currentStatus: string;
+  type: 'sales' | 'purchases';
+}
+
+function StatusTimeline({ currentStatus, type }: StatusTimelineProps) {
+  const stages = type === 'purchases' ? PURCHASE_STAGES : SALES_STAGES;
+  const isTerminal = TERMINAL_STATUSES.includes(currentStatus?.toUpperCase());
+  const normalizedStatus = currentStatus?.toUpperCase() || 'DRAFT';
+  const currentIndex = stages.indexOf(normalizedStatus);
+
+  // If status is not in the standard pipeline (e.g. PAID, COMPLETED),
+  // treat it as the last stage
+  const effectiveIndex =
+    currentIndex >= 0
+      ? currentIndex
+      : isTerminal
+        ? -1
+        : stages.length - 1;
+
+  return (
+    <View style={styles.timelineSection}>
+      <Text style={styles.timelineSectionTitle}>Order Progress</Text>
+
+      {isTerminal ? (
+        <View style={styles.terminalBanner}>
+          <Ionicons
+            name={normalizedStatus === 'VOID' ? 'ban-outline' : 'close-circle-outline'}
+            size={20}
+            color="#ff4d4f"
+          />
+          <Text style={styles.terminalBannerText}>
+            This order has been {normalizedStatus.toLowerCase()}.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.timeline}>
+          {stages.map((stage, index) => {
+            const isCompleted = index <= effectiveIndex;
+            const isCurrent = index === effectiveIndex;
+            const isLast = index === stages.length - 1;
+            const stageLabel = stage.replace(/_/g, ' ');
+
+            return (
+              <View key={stage} style={styles.timelineStep}>
+                <View style={styles.timelineIndicator}>
+                  <View
+                    style={[
+                      styles.timelineDot,
+                      isCompleted && styles.timelineDotCompleted,
+                      isCurrent && styles.timelineDotCurrent,
+                    ]}
+                  >
+                    {isCompleted && !isCurrent && (
+                      <Ionicons name="checkmark" size={12} color="#fff" />
+                    )}
+                    {isCurrent && (
+                      <View style={styles.timelineDotInner} />
+                    )}
+                  </View>
+                  {!isLast && (
+                    <View
+                      style={[
+                        styles.timelineLine,
+                        isCompleted && index < effectiveIndex && styles.timelineLineCompleted,
+                      ]}
+                    />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.timelineLabel,
+                    isCompleted && styles.timelineLabelCompleted,
+                    isCurrent && styles.timelineLabelCurrent,
+                  ]}
+                >
+                  {stageLabel}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
@@ -471,5 +605,111 @@ const styles = StyleSheet.create({
     color: '#bfbfbf',
     textAlign: 'center',
     paddingVertical: 16,
+  },
+
+  // Status Timeline
+  timelineSection: {
+    margin: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+  },
+  timelineSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+    color: '#1f1f1f',
+  },
+  timeline: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  timelineStep: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  timelineIndicator: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  timelineDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 2,
+    borderColor: '#d9d9d9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  timelineDotCompleted: {
+    backgroundColor: '#52c41a',
+    borderColor: '#52c41a',
+  },
+  timelineDotCurrent: {
+    backgroundColor: '#fff',
+    borderColor: '#1890ff',
+    borderWidth: 3,
+  },
+  timelineDotInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#1890ff',
+  },
+  timelineLine: {
+    position: 'absolute',
+    height: 2,
+    backgroundColor: '#d9d9d9',
+    top: 11,
+    left: '50%',
+    right: '-50%',
+    zIndex: 0,
+  },
+  timelineLineCompleted: {
+    backgroundColor: '#52c41a',
+  },
+  timelineLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: '#bfbfbf',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  timelineLabelCompleted: {
+    color: '#52c41a',
+  },
+  timelineLabelCurrent: {
+    color: '#1890ff',
+    fontWeight: '700',
+  },
+
+  // Terminal status banner
+  terminalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff1f0',
+    padding: 12,
+    borderRadius: 6,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#ffa39e',
+  },
+  terminalBannerText: {
+    fontSize: 14,
+    color: '#ff4d4f',
+    fontWeight: '500',
+    flex: 1,
   },
 });

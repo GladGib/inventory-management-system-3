@@ -16,6 +16,12 @@
       "expo-router",
       "expo-secure-store",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow IMS Pro to use Face ID for quick sign-in."
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "Allow IMS Pro to access your camera for barcode scanning."

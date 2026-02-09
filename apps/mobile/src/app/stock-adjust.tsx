@@ -15,6 +15,8 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../api/client';
+import { useNetwork } from './_layout';
+import { OfflineQueue } from '../services/offline-queue';
 
 // -----------------------------------------------
 // Types aligned with backend CreateAdjustmentDto
@@ -114,6 +116,8 @@ export default function StockAdjustScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const { isConnected, refreshPendingCount } = useNetwork();
+
   const [direction, setDirection] = useState<AdjustmentDirection>('ADD');
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState<AdjustmentReason>('CORRECTION');
@@ -152,7 +156,7 @@ export default function StockAdjustScreen() {
     enabled: !!itemId,
   });
 
-  // Submit adjustment mutation
+  // Submit adjustment mutation -- supports offline queueing
   const mutation = useMutation({
     mutationFn: async () => {
       const qty = parseInt(quantity, 10);
@@ -172,11 +176,28 @@ export default function StockAdjustScreen() {
         notes: notes.trim() || undefined,
       };
 
+      // If offline, enqueue the adjustment for later sync
+      if (!isConnected) {
+        await OfflineQueue.enqueue('adjustment', payload);
+        await refreshPendingCount();
+        return { _offline: true };
+      }
+
       const res = await apiClient.post('/inventory/adjustments', payload);
       return res.data;
     },
-    onSuccess: () => {
-      // Invalidate related queries so lists refresh
+    onSuccess: (data: any) => {
+      if (data?._offline) {
+        // Queued offline -- show a specific message and navigate back
+        Alert.alert(
+          'Saved Offline',
+          'Adjustment saved offline. It will sync when you reconnect.',
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+        return;
+      }
+
+      // Online success -- invalidate related queries so lists refresh
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['item', itemId] });
       queryClient.invalidateQueries({ queryKey: ['inventory-stock', itemId] });

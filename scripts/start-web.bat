@@ -71,11 +71,12 @@ echo ============================================
 echo   All Web Application Services Started!
 echo ============================================
 echo.
-echo   Web App:    http://localhost:3000
-echo   API:        http://localhost:3001
-echo   API Docs:   http://localhost:3001/api/docs
-echo   Mailpit:    http://localhost:8025
-echo   MinIO:      http://localhost:9001
+echo   Web App:       http://localhost:3000
+echo   API:           http://localhost:3001
+echo   API Docs:      http://localhost:3001/api/docs
+echo   Elasticsearch: http://localhost:9200
+echo   Mailpit:       http://localhost:8025
+echo   MinIO:         http://localhost:9001
 echo.
 echo Press any key to close this window...
 pause >nul

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Switch,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../stores/auth.store';
 
@@ -18,7 +20,75 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuthStore();
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  const {
+    login,
+    biometricLogin,
+    enableBiometric,
+    biometricAvailable,
+    biometricEnabled,
+    rememberedEmail,
+    loadRememberedEmail,
+    setRememberMe: persistRememberMe,
+    logoutMessage,
+    clearLogoutMessage,
+  } = useAuthStore();
+
+  // ---------------------------------------------------------------------------
+  // Load remembered email on mount
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    loadRememberedEmail();
+  }, [loadRememberedEmail]);
+
+  // Pre-fill email and toggle when remembered email is loaded
+  useEffect(() => {
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, [rememberedEmail]);
+
+  // ---------------------------------------------------------------------------
+  // Display and clear logout message (e.g. inactivity)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (logoutMessage) {
+      Alert.alert('Session Ended', logoutMessage);
+      clearLogoutMessage();
+    }
+  }, [logoutMessage, clearLogoutMessage]);
+
+  /**
+   * After a successful password login, check whether the device supports
+   * biometrics and the user has not yet opted in. If so, prompt them.
+   */
+  const promptBiometricEnrollment = () => {
+    if (!biometricAvailable || biometricEnabled) return;
+
+    // Use a short delay so the login state has time to settle before
+    // showing a second alert (avoids alert-stacking on iOS).
+    setTimeout(() => {
+      Alert.alert(
+        'Enable Biometric Login',
+        'Enable biometric login for faster access?',
+        [
+          { text: 'Not Now', style: 'cancel' },
+          {
+            text: 'Enable',
+            onPress: async () => {
+              const success = await enableBiometric();
+              if (success) {
+                Alert.alert('Success', 'Biometric login enabled. You can use it next time you sign in.');
+              }
+            },
+          },
+        ],
+      );
+    }, 600);
+  };
 
   const handleLogin = async () => {
     const trimmedEmail = email.trim();
@@ -31,6 +101,16 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(trimmedEmail, password);
+
+      // Persist or clear remembered email based on toggle
+      if (rememberMe) {
+        await persistRememberMe(trimmedEmail);
+      } else {
+        await persistRememberMe(null);
+      }
+
+      // Prompt biometric enrollment after successful login
+      promptBiometricEnrollment();
       // Navigation is handled by the root layout auth redirect
     } catch (error: any) {
       const message =
@@ -42,6 +122,24 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
+
+  const handleBiometricLogin = async () => {
+    setBiometricLoading(true);
+    try {
+      await biometricLogin();
+      // Navigation is handled by the root layout auth redirect
+    } catch (error: any) {
+      const message = error.message || 'Biometric authentication failed.';
+      // Only show the error if the user did not simply cancel
+      if (!message.includes('cancelled')) {
+        Alert.alert('Biometric Login Failed', message);
+      }
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
+  const isAnyLoading = loading || biometricLoading;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -73,7 +171,7 @@ export default function LoginScreen() {
                 textContentType="emailAddress"
                 autoComplete="email"
                 returnKeyType="next"
-                editable={!loading}
+                editable={!isAnyLoading}
               />
             </View>
 
@@ -90,14 +188,28 @@ export default function LoginScreen() {
                 autoComplete="password"
                 returnKeyType="go"
                 onSubmitEditing={handleLogin}
-                editable={!loading}
+                editable={!isAnyLoading}
+              />
+            </View>
+
+            {/* Remember Me toggle */}
+            <View style={styles.rememberMeRow}>
+              <Text style={styles.rememberMeLabel}>Remember me</Text>
+              <Switch
+                value={rememberMe}
+                onValueChange={setRememberMe}
+                trackColor={{ false: '#595959', true: '#1890ff' }}
+                thumbColor={rememberMe ? '#fff' : '#d9d9d9'}
+                disabled={isAnyLoading}
+                accessibilityLabel="Remember me"
+                accessibilityRole="switch"
               />
             </View>
 
             <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
+              style={[styles.button, isAnyLoading && styles.buttonDisabled]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={isAnyLoading}
               activeOpacity={0.8}
             >
               {loading ? (
@@ -106,6 +218,33 @@ export default function LoginScreen() {
                 <Text style={styles.buttonText}>Sign In</Text>
               )}
             </TouchableOpacity>
+
+            {/* Biometric login button -- only shown when enabled */}
+            {biometricEnabled && (
+              <TouchableOpacity
+                style={[styles.biometricButton, isAnyLoading && styles.buttonDisabled]}
+                onPress={handleBiometricLogin}
+                disabled={isAnyLoading}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Sign in with biometrics"
+              >
+                {biometricLoading ? (
+                  <ActivityIndicator color="#1890ff" />
+                ) : (
+                  <View style={styles.biometricButtonContent}>
+                    <Ionicons
+                      name="finger-print-outline"
+                      size={24}
+                      color="#1890ff"
+                    />
+                    <Text style={styles.biometricButtonText}>
+                      Sign in with Biometrics
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.footer}>
@@ -167,6 +306,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#262626',
   },
+  rememberMeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  rememberMeLabel: {
+    fontSize: 14,
+    color: '#d9d9d9',
+    fontWeight: '500',
+  },
   button: {
     backgroundColor: '#1890ff',
     paddingVertical: 16,
@@ -179,6 +329,24 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  biometricButton: {
+    borderWidth: 1,
+    borderColor: '#1890ff',
+    backgroundColor: 'transparent',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  biometricButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  biometricButtonText: {
+    color: '#1890ff',
     fontSize: 16,
     fontWeight: '600',
   },

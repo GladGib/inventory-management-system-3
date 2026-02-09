@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PdfService, PurchaseOrderPdfData, BillPdfData } from '@/modules/common/pdf';
+import { TaxService } from '@/modules/tax/tax.service';
 import { DocumentLocale } from '@/common/i18n/document-translations';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { CreateReceiveDto } from './dto/create-receive.dto';
@@ -16,6 +17,7 @@ export class PurchasesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
+    private readonly taxService: TaxService,
   ) {}
 
   // ============ Purchase Orders ============
@@ -53,21 +55,26 @@ export class PurchasesService {
       : 1;
     const orderNumber = `PO-${String(nextNum).padStart(6, '0')}`;
 
-    // Calculate totals
+    // Calculate totals with tax
     let subtotal = 0;
     let totalTax = 0;
-    const itemsWithTotals = dto.items.map((item) => {
+    const itemsWithTotals = [];
+    for (const item of dto.items) {
       const itemDetails = itemsMap.get(item.itemId)!;
       const lineTotal = item.quantity * item.unitPrice;
       const discountAmount = item.discountPercent
         ? (lineTotal * item.discountPercent) / 100
         : 0;
       const taxableAmount = lineTotal - discountAmount;
-      const taxAmount = 0; // TODO: Get from tax rate
+      const { taxAmount } = await this.taxService.calculateLineTax(
+        organizationId,
+        taxableAmount,
+        item.taxRateId,
+      );
       subtotal += taxableAmount;
       totalTax += taxAmount;
 
-      return {
+      itemsWithTotals.push({
         itemId: item.itemId,
         description: item.description,
         quantity: item.quantity,
@@ -78,8 +85,8 @@ export class PurchasesService {
         taxRateId: item.taxRateId,
         taxAmount,
         total: taxableAmount + taxAmount,
-      };
-    });
+      });
+    }
 
     const discountAmount = dto.discountAmount || 0;
     const shippingCharges = dto.shippingCharges || 0;
@@ -441,16 +448,21 @@ export class PurchasesService {
       : 1;
     const billNumber = `BILL-${String(nextNum).padStart(6, '0')}`;
 
-    // Calculate totals
+    // Calculate totals with tax
     let subtotal = 0;
     let totalTax = 0;
-    const itemsWithTotals = dto.items.map((item) => {
+    const itemsWithTotals = [];
+    for (const item of dto.items) {
       const lineTotal = item.quantity * item.unitPrice;
-      const taxAmount = 0; // TODO: Get from tax rate
+      const { taxAmount } = await this.taxService.calculateLineTax(
+        organizationId,
+        lineTotal,
+        item.taxRateId,
+      );
       subtotal += lineTotal;
       totalTax += taxAmount;
 
-      return {
+      itemsWithTotals.push({
         itemId: item.itemId,
         description: item.description,
         accountId: item.accountId,
@@ -459,8 +471,8 @@ export class PurchasesService {
         taxRateId: item.taxRateId,
         taxAmount,
         total: lineTotal + taxAmount,
-      };
-    });
+      });
+    }
 
     const discountAmount = dto.discountAmount || 0;
     const total = subtotal - discountAmount + totalTax;

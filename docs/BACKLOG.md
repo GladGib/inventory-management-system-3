@@ -490,3 +490,28 @@ This document tracks remaining, incomplete, and not-yet-implemented features bas
 - Performance: Load test + stress test scripts (autocannon)
 
 **File summary: 215 files (67 modified + 148 new), ~8,968 insertions**
+
+### Iteration E: Gap Analysis Fixes (2026-02-10)
+
+**Gap analysis** performed comparing BACKLOG.md, IMPLEMENTATION_PLAN.md, and 95 OpenSpec specs against actual codebase. Several gaps identified and resolved:
+
+**Critical API Fixes (2 items):**
+- Tax calculation integration — wired TaxService into SalesService, PurchasesService, QuotesService (previously hardcoded `taxAmount = 0`)
+- Unit field fix — replaced hardcoded 'PCS' with actual item unit from database in sales orders, invoices, quotes
+
+**Mobile App Completion (8 items):**
+- Biometric authentication (expo-local-authentication, enrollment prompt, settings toggle)
+- Session management (30-min inactivity timeout, background/foreground lifecycle)
+- Remember me toggle (persists email in AsyncStorage)
+- Organization selection (multi-org user support)
+- Batch stocktake mode (multi-item count, variance review, bulk submit)
+- Recent adjustments list (paginated, filterable)
+- Offline support (connectivity detection, queue adjustments/sales, auto-sync on reconnect)
+- Coming Soon screens completed (Profile, Notification Settings, Change Password, App Settings, Item Detail, Order Detail)
+
+**Web Frontend Fix (1 item):**
+- Customer/Vendor detail overview tab — replaced "coming soon" placeholder with actual contact info display (Descriptions component with all contact fields)
+
+**Documentation Updates (2 items):**
+- IMPLEMENTATION_PLAN.md — updated all phase statuses to ✅ COMPLETED, corrected Flutter → React Native/Expo, updated project structure, current progress
+- OpenSpec mobile specs — added technology mapping notes to all 8 mobile spec files (Flutter → React Native/Expo equivalents)

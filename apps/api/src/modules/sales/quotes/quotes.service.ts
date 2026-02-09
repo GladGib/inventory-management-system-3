@@ -4,12 +4,16 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { TaxService } from '@/modules/tax/tax.service';
 import { CreateQuoteDto, DiscountType } from './dto/create-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 
 @Injectable()
 export class QuotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly taxService: TaxService,
+  ) {}
 
   async createQuote(organizationId: string, userId: string, dto: CreateQuoteDto) {
     // Validate customer if provided
@@ -22,14 +26,17 @@ export class QuotesService {
       }
     }
 
-    // Validate items
+    // Validate items and collect their details
+    const itemsMap = new Map<string, { unit: string }>();
     for (const item of dto.items) {
       const exists = await this.prisma.item.findFirst({
         where: { id: item.itemId, organizationId },
+        select: { id: true, unit: true },
       });
       if (!exists) {
         throw new NotFoundException(`Item ${item.itemId} not found`);
       }
+      itemsMap.set(item.itemId, { unit: exists.unit });
     }
 
     // Generate quote number
@@ -43,25 +50,31 @@ export class QuotesService {
       : 1;
     const quoteNumber = `QT-${String(nextNum).padStart(5, '0')}`;
 
-    // Calculate totals
+    // Calculate totals with tax
     let subtotal = 0;
     let totalTax = 0;
-    const itemsWithTotals = dto.items.map((item, index) => {
+    const itemsWithTotals = [];
+    for (let index = 0; index < dto.items.length; index++) {
+      const item = dto.items[index];
+      const itemDetails = itemsMap.get(item.itemId)!;
       const lineTotal = item.quantity * item.unitPrice;
       const discountAmount = item.discountPercent
         ? (lineTotal * item.discountPercent) / 100
         : 0;
       const taxableAmount = lineTotal - discountAmount;
-      // TODO: Get tax rate from taxRateId
-      const taxAmount = 0; // Placeholder
+      const { taxAmount } = await this.taxService.calculateLineTax(
+        organizationId,
+        taxableAmount,
+        item.taxRateId,
+      );
       subtotal += taxableAmount;
       totalTax += taxAmount;
 
-      return {
+      itemsWithTotals.push({
         itemId: item.itemId,
         description: item.description,
         quantity: item.quantity,
-        unit: 'PCS', // Default unit, should come from item
+        unit: itemDetails.unit,
         rate: item.unitPrice,
         discountType: 'PERCENTAGE' as const,
         discountValue: item.discountPercent || 0,
@@ -70,8 +83,8 @@ export class QuotesService {
         taxAmount,
         amount: taxableAmount + taxAmount,
         sortOrder: index,
-      };
-    });
+      });
+    }
 
     // Quote-level discount
     let quoteDiscountAmount = 0;

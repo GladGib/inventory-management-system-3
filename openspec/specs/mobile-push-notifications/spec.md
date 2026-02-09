@@ -1,7 +1,9 @@
 # Mobile Push Notifications Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. Technology mapping: Firebase Cloud Messaging (FCM) → expo-notifications (Expo Push Service), firebase_messaging → expo-notifications. The behavioral requirements below remain valid.
+
 ## Purpose
-Implement push notification support for the Flutter mobile app using Firebase Cloud Messaging (FCM), including device token registration, notification delivery for business events (low stock, sales, payments, overdue invoices), in-app notification list with read/unread state, deep linking from notifications, and user-configurable notification preferences. Requires new backend infrastructure including a DeviceToken model, notification API endpoints, and a BullMQ-based notification dispatch queue.
+Implement push notification support for the mobile app using Expo Push Notifications, including device token registration, notification delivery for business events (low stock, sales, payments, overdue invoices), in-app notification list with read/unread state, deep linking from notifications, and user-configurable notification preferences. Requires backend infrastructure including a DeviceToken model, notification API endpoints, and a BullMQ-based notification dispatch queue.
 
 ## Requirements
 

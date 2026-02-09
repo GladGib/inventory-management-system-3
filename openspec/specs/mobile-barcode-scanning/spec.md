@@ -1,7 +1,9 @@
 # Mobile Barcode Scanning Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. Technology mapping: mobile_scanner → expo-camera/expo-barcode-scanner. The behavioral requirements below remain valid.
+
 ## Purpose
-Provide camera-based barcode and QR code scanning for the Flutter mobile app, enabling quick item lookup, batch scanning for stocktakes, and scan-to-sale workflows. Uses the `mobile_scanner` package for reliable, performant barcode detection.
+Provide camera-based barcode and QR code scanning for the mobile app, enabling quick item lookup, batch scanning for stocktakes, and scan-to-sale workflows. Uses expo-camera with barcode scanning for reliable, performant barcode detection.
 
 ## Requirements
 

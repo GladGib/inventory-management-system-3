@@ -1,5 +1,7 @@
 # Mobile Quick Sale / Invoice Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. The behavioral requirements below remain valid; Dart/Flutter code examples should be mapped to TypeScript/React Native equivalents.
+
 ## Purpose
 Provide a streamlined, mobile-first sale flow for counter and walk-in sales, enabling users to add items (via search or barcode scan), adjust quantities and discounts, select customers, calculate taxes (SST), generate invoices, accept payments, and share receipts via Bluetooth printing or PDF sharing. Integrates with the existing backend sales and invoice endpoints.
 

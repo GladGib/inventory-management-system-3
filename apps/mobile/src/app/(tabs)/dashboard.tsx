@@ -6,8 +6,11 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../api/client';
 
 // -----------------------------------------------
@@ -55,6 +58,8 @@ interface DashboardOverview {
 // -----------------------------------------------
 
 export default function DashboardScreen() {
+  const router = useRouter();
+
   const {
     data: overview,
     isLoading,
@@ -93,6 +98,45 @@ export default function DashboardScreen() {
       }
     >
       <Text style={styles.heading}>Dashboard</Text>
+
+      {/* ---- Quick Actions ---- */}
+      <View style={styles.quickActions}>
+        <TouchableOpacity
+          style={styles.quickActionButton}
+          onPress={() => router.push('/stocktake')}
+          accessibilityRole="button"
+          accessibilityLabel="Start batch stocktake"
+        >
+          <View style={[styles.quickActionIcon, { backgroundColor: '#e6f7ff' }]}>
+            <Ionicons name="clipboard-outline" size={20} color="#1890ff" />
+          </View>
+          <Text style={styles.quickActionLabel}>Stocktake</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickActionButton}
+          onPress={() => router.push('/adjustments')}
+          accessibilityRole="button"
+          accessibilityLabel="View adjustment history"
+        >
+          <View style={[styles.quickActionIcon, { backgroundColor: '#f6ffed' }]}>
+            <Ionicons name="swap-vertical-outline" size={20} color="#52c41a" />
+          </View>
+          <Text style={styles.quickActionLabel}>Adjustments</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickActionButton}
+          onPress={() => router.push('/quick-sale')}
+          accessibilityRole="button"
+          accessibilityLabel="Create quick sale"
+        >
+          <View style={[styles.quickActionIcon, { backgroundColor: '#fff7e6' }]}>
+            <Ionicons name="cart-outline" size={20} color="#faad14" />
+          </View>
+          <Text style={styles.quickActionLabel}>Quick Sale</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* ---- KPI Cards ---- */}
       <View style={styles.statsGrid}>
@@ -291,6 +335,39 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 8,
     color: '#1f1f1f',
+  },
+
+  // Quick Actions
+  quickActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 10,
+  },
+  quickActionButton: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 14,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+  },
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#434343',
   },
 
   // Stats grid

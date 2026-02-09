@@ -5,10 +5,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../api/client';
 
 // -----------------------------------------------
@@ -72,6 +74,7 @@ interface ItemDetail {
 
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
 
   const { data: item, isLoading, isRefetching, refetch } = useQuery<ItemDetail>({
     queryKey: ['item', id],
@@ -123,6 +126,49 @@ export default function ItemDetailScreen() {
             </View>
           )}
         </View>
+      </View>
+
+      {/* ---- Quick Actions ---- */}
+      <View style={styles.quickActions}>
+        <TouchableOpacity
+          style={styles.quickActionButton}
+          onPress={() =>
+            router.push({
+              pathname: '/stock-adjust',
+              params: {
+                itemId: item.id,
+                itemName: encodeURIComponent(item.name),
+              },
+            } as any)
+          }
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Adjust stock for this item"
+        >
+          <Ionicons name="swap-vertical" size={20} color="#fff" />
+          <Text style={styles.quickActionText}>Adjust Stock</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.quickActionButton, styles.quickActionSecondary]}
+          onPress={() =>
+            router.push({
+              pathname: '/quick-sale',
+              params: {
+                itemId: item.id,
+                itemName: encodeURIComponent(item.name),
+                itemSku: item.sku,
+                itemPrice: String(item.sellingPrice),
+              },
+            } as any)
+          }
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Add this item to a quick sale"
+        >
+          <Ionicons name="cart" size={20} color="#fff" />
+          <Text style={styles.quickActionText}>Quick Sale</Text>
+        </TouchableOpacity>
       </View>
 
       {/* ---- Pricing ---- */}
@@ -581,5 +627,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1890ff',
     fontWeight: '500',
+  },
+
+  // Quick actions
+  quickActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginHorizontal: 12,
+    marginTop: 12,
+  },
+  quickActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1890ff',
+    paddingVertical: 14,
+    borderRadius: 8,
+    gap: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+  },
+  quickActionSecondary: {
+    backgroundColor: '#52c41a',
+  },
+  quickActionText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

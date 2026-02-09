@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PdfService, SalesOrderPdfData, InvoicePdfData } from '@/modules/common/pdf';
+import { TaxService } from '@/modules/tax/tax.service';
 import { DocumentLocale } from '@/common/i18n/document-translations';
 import { CreateSalesOrderDto, UpdateSalesOrderDto, DiscountType } from './dto/create-sales-order.dto';
 import { CreateInvoiceDto, CreateInvoiceFromOrderDto } from './dto/create-invoice.dto';
@@ -15,6 +16,7 @@ export class SalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
+    private readonly taxService: TaxService,
   ) {}
 
   // ============ Sales Orders ============
@@ -28,14 +30,17 @@ export class SalesService {
       throw new NotFoundException('Customer not found');
     }
 
-    // Validate items
+    // Validate items and collect their details
+    const itemsMap = new Map<string, { unit: string }>();
     for (const item of dto.items) {
       const exists = await this.prisma.item.findFirst({
         where: { id: item.itemId, organizationId },
+        select: { id: true, unit: true },
       });
       if (!exists) {
         throw new NotFoundException(`Item ${item.itemId} not found`);
       }
+      itemsMap.set(item.itemId, { unit: exists.unit });
     }
 
     // Generate order number
@@ -49,25 +54,31 @@ export class SalesService {
       : 1;
     const orderNumber = `SO-${String(nextNum).padStart(6, '0')}`;
 
-    // Calculate totals
+    // Calculate totals with tax
     let subtotal = 0;
     let totalTax = 0;
-    const itemsWithTotals = dto.items.map((item, index) => {
+    const itemsWithTotals = [];
+    for (let index = 0; index < dto.items.length; index++) {
+      const item = dto.items[index];
+      const itemDetails = itemsMap.get(item.itemId)!;
       const lineTotal = item.quantity * item.unitPrice;
       const discountAmount = item.discountPercent
         ? (lineTotal * item.discountPercent) / 100
         : 0;
       const taxableAmount = lineTotal - discountAmount;
-      // TODO: Get tax rate from taxRateId
-      const taxAmount = 0; // Placeholder
+      const { taxAmount } = await this.taxService.calculateLineTax(
+        organizationId,
+        taxableAmount,
+        item.taxRateId,
+      );
       subtotal += taxableAmount;
       totalTax += taxAmount;
 
-      return {
+      itemsWithTotals.push({
         itemId: item.itemId,
         description: item.description,
         quantity: item.quantity,
-        unit: 'PCS', // Default unit, should come from item
+        unit: itemDetails.unit,
         rate: item.unitPrice,
         discountType: 'PERCENTAGE' as const,
         discountValue: item.discountPercent || 0,
@@ -76,8 +87,8 @@ export class SalesService {
         taxAmount,
         amount: taxableAmount + taxAmount,
         sortOrder: index,
-      };
-    });
+      });
+    }
 
     // Order-level discount
     let orderDiscountAmount = 0;
@@ -479,24 +490,34 @@ export class SalesService {
       : 1;
     const invoiceNumber = `INV-${String(nextNum).padStart(6, '0')}`;
 
-    // Calculate totals
+    // Calculate totals with tax
     let subtotal = 0;
     let totalTax = 0;
-    const itemsWithTotals = dto.items.map((item, index) => {
+    const itemsWithTotals = [];
+    for (let index = 0; index < dto.items.length; index++) {
+      const item = dto.items[index];
+      const dbItem = await this.prisma.item.findFirst({
+        where: { id: item.itemId, organizationId },
+        select: { unit: true },
+      });
       const lineTotal = item.quantity * item.unitPrice;
       const discountAmt = item.discountPercent
         ? (lineTotal * item.discountPercent) / 100
         : 0;
       const taxableAmount = lineTotal - discountAmt;
-      const taxAmount = 0; // TODO: Get from tax rate
+      const { taxAmount } = await this.taxService.calculateLineTax(
+        organizationId,
+        taxableAmount,
+        item.taxRateId,
+      );
       subtotal += taxableAmount;
       totalTax += taxAmount;
 
-      return {
+      itemsWithTotals.push({
         itemId: item.itemId,
         description: item.description,
         quantity: item.quantity,
-        unit: 'PCS', // Default unit
+        unit: dbItem?.unit || 'PCS',
         rate: item.unitPrice,
         discountType: 'PERCENTAGE' as const,
         discountValue: item.discountPercent || 0,
@@ -505,8 +526,8 @@ export class SalesService {
         taxAmount,
         amount: taxableAmount + taxAmount,
         sortOrder: index,
-      };
-    });
+      });
+    }
 
     const invoiceDiscountAmount = dto.discountAmount || 0;
     const total = subtotal - invoiceDiscountAmount + totalTax;

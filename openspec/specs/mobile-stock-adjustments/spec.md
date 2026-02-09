@@ -1,5 +1,7 @@
 # Mobile Stock Adjustments Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. Technology mapping: Hive offline_queue → AsyncStorage, connectivity_plus → @react-native-community/netinfo. The behavioral requirements below remain valid.
+
 ## Purpose
 Enable mobile users to adjust inventory stock levels through a quick single-item adjustment flow and a batch stocktake mode. Supports offline queuing of adjustments and integrates with the existing backend endpoints (`POST /api/v1/inventory/adjustments`, `POST /api/v1/inventory/adjustments/bulk`, `GET /api/v1/inventory/adjustments`).
 

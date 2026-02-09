@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(openspec new:*)",
+      "Bash(npm run dev:*)",
+      "Skill(git-commit-helper)",
+      "Skill(git-commit-helper:*)"
+    ]
+  }
+}

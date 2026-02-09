@@ -1,5 +1,7 @@
 # Mobile Item Lookup Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. The behavioral requirements below remain valid; Dart/Flutter code examples should be mapped to TypeScript/React Native equivalents.
+
 ## Purpose
 Provide a mobile-optimized item search and detail view that enables users to quickly find inventory items by name, SKU, part number, cross-reference number, or barcode. Supports offline caching of recently viewed items and integrates with the existing backend item endpoints (`GET /api/v1/items`, `GET /api/v1/items/:id`, `GET /api/v1/items/low-stock`).
 

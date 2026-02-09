@@ -1,5 +1,7 @@
 # Mobile Dashboard Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. The behavioral requirements below remain valid; Dart/Flutter code examples should be mapped to TypeScript/React Native equivalents.
+
 ## Purpose
 Provide a mobile-optimized dashboard with KPI cards, quick action shortcuts, sales charts, and alert summaries. The dashboard reuses the existing backend API endpoints (`GET /dashboard`, `GET /dashboard/sales-trend`, `GET /dashboard/top-items`, `GET /dashboard/alerts`) and adapts the data presentation for a single-column mobile viewport.
 

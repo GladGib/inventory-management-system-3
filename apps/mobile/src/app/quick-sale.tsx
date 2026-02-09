@@ -11,6 +11,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import { useNetwork } from './_layout';
+import { OfflineQueue } from '../services/offline-queue';
 
 interface CartItem {
   itemId: string;
@@ -25,6 +27,8 @@ export default function QuickSaleScreen() {
   const { itemId } = useLocalSearchParams<{ itemId?: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  const { isConnected, refreshPendingCount } = useNetwork();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState('');
@@ -93,7 +97,7 @@ export default function QuickSaleScreen() {
 
   const createSale = useMutation({
     mutationFn: async () => {
-      const res = await apiClient.post('/sales/orders', {
+      const payload = {
         customerName: customerName || 'Walk-in Customer',
         items: cart.map((c) => ({
           itemId: c.itemId,
@@ -101,10 +105,29 @@ export default function QuickSaleScreen() {
           unitPrice: c.unitPrice,
         })),
         status: 'CONFIRMED',
-      });
+      };
+
+      // If offline, enqueue the sale for later sync
+      if (!isConnected) {
+        await OfflineQueue.enqueue('sale', payload);
+        await refreshPendingCount();
+        return { _offline: true };
+      }
+
+      const res = await apiClient.post('/sales/orders', payload);
       return res.data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
+      if (data?._offline) {
+        // Queued offline -- show a specific message and navigate back
+        Alert.alert(
+          'Saved Offline',
+          'Adjustment saved offline. It will sync when you reconnect.',
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+        return;
+      }
+
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-overview'] });

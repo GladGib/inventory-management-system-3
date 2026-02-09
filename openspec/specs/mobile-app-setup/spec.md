@@ -1,7 +1,9 @@
 # Mobile App Setup Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. Technology mapping: Flutter → React Native/Expo, Dart → TypeScript, Riverpod → Zustand, Dio → Axios, GoRouter → Expo Router, Hive → AsyncStorage, flutter_secure_storage → expo-secure-store, Freezed → plain TS interfaces, pubspec.yaml → package.json. The behavioral requirements below remain valid; code examples are illustrative of the Flutter-era spec and should be mapped to their React Native equivalents.
+
 ## Purpose
-Establish the Flutter mobile application project at `apps/mobile/` with clean architecture, state management, networking, local storage, navigation, and theming aligned with the existing web application and NestJS backend.
+Establish the React Native (Expo) mobile application project at `apps/mobile/` with modular architecture, state management, networking, local storage, navigation, and theming aligned with the existing web application and NestJS backend.
 
 ## Requirements
 

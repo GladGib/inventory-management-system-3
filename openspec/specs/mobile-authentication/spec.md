@@ -1,7 +1,9 @@
 # Mobile Authentication Specification
 
+> **Implementation Note (2026-02-10):** The actual implementation uses **React Native with Expo** instead of Flutter. Technology mapping: flutter_secure_storage → expo-secure-store, LocalAuthentication (Flutter) → expo-local-authentication, Riverpod → Zustand, Dio interceptor → Axios interceptor, GoRouter → Expo Router, Hive → AsyncStorage. The behavioral requirements below remain valid.
+
 ## Purpose
-Provide secure authentication for the Flutter mobile application, including email/password login, JWT token management with auto-refresh, biometric login (fingerprint/Face ID), session management, and organization context selection. Integrates with the existing NestJS backend auth endpoints (`POST /auth/login`, `POST /auth/register`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`).
+Provide secure authentication for the mobile application, including email/password login, JWT token management with auto-refresh, biometric login (fingerprint/Face ID), session management, and organization context selection. Integrates with the existing NestJS backend auth endpoints (`POST /auth/login`, `POST /auth/register`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`).
 
 ## Requirements
 
